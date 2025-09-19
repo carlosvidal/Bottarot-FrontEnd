@@ -1,0 +1,112 @@
+<script setup>
+import { ref, nextTick, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import QuestionForm from '../components/QuestionForm.vue';
+import Reading from '../components/Reading.vue';
+import Sidebar from '../components/Sidebar.vue';
+import ChatHeader from '../components/ChatHeader.vue';
+
+const readings = ref([]);
+const chatHistory = ref(null);
+const isSidebarOpen = ref(false);
+
+const handleQuestionSubmitted = (question) => {
+    const newReading = {
+        id: Date.now(),
+        question: question
+    };
+    readings.value.push(newReading);
+};
+
+watch(readings, () => {
+    nextTick(() => {
+        if (chatHistory.value) {
+            chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
+        }
+    });
+}, { deep: true });
+
+onMounted(() => {
+    const route = useRoute();
+    const router = useRouter();
+    const initialQuestion = route.query.q;
+
+    if (initialQuestion && typeof initialQuestion === 'string') {
+        handleQuestionSubmitted(initialQuestion);
+        router.replace({ query: {} });
+    }
+});
+</script>
+
+<template>
+    <div class="chat-layout">
+        <div class="sidebar-container" :class="{ 'is-open': isSidebarOpen }">
+            <Sidebar />
+        </div>
+
+        <div class="main-content">
+            <ChatHeader>
+                <template #menu-button>
+                    <button @click="isSidebarOpen = !isSidebarOpen" class="menu-button">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </template>
+            </ChatHeader>
+
+            <main class="chat-container" ref="chatHistory">
+                <div v-if="readings.length === 0" class="welcome-message">
+                    <h2>Bienvenido</h2>
+                    <p>Formula tu pregunta en la parte de abajo para que el oráculo te muestre tu destino.</p>
+                </div>
+                <div v-else class="readings-list">
+                    <Reading v-for="reading in readings" :key="reading.id" :reading-data="reading" />
+                </div>
+            </main>
+
+            <footer class="form-container">
+                <QuestionForm @question-submitted="handleQuestionSubmitted" />
+            </footer>
+        </div>
+        <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="overlay"></div>
+    </div>
+</template>
+
+<style scoped>
+.chat-layout { display: flex; height: 100vh; background: #0f3460; }
+
+/* Sidebar */
+.sidebar-container { width: 280px; flex-shrink: 0; background: #16213e; transition: transform 0.3s ease; }
+
+/* Main Content */
+.main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+.chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+.readings-list { max-width: 900px; margin: 0 auto; }
+.welcome-message { text-align: center; margin-top: 20vh; color: #ccc; }
+.welcome-message h2 { font-size: 2.5rem; color: #ffd700; margin-bottom: 15px; }
+.welcome-message p { font-size: 1.2rem; max-width: 500px; margin: 0 auto; line-height: 1.6; }
+.form-container { flex-shrink: 0; }
+
+/* Menu Button */
+.menu-button { display: none; background: none; border: none; cursor: pointer; padding: 5px; }
+.menu-button span { display: block; width: 22px; height: 2px; background-color: #ccc; margin: 4px 0; transition: transform 0.3s; }
+
+/* Overlay for mobile */
+.overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 998; }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .menu-button { display: block; z-index: 1000; }
+    .sidebar-container { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); z-index: 999; }
+    .sidebar-container.is-open { transform: translateX(0); }
+    .overlay.is-open { display: block; }
+}
+
+/* Scrollbar styles */
+.chat-container::-webkit-scrollbar { width: 8px; }
+.chat-container::-webkit-scrollbar-track { background: #16213e; }
+.chat-container::-webkit-scrollbar-thumb { background-color: #0f3460; border-radius: 4px; border: 2px solid #16213e; }
+.chat-container::-webkit-scrollbar-thumb:hover { background-color: #1e4a83; }
+</style>

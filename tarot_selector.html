@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selector de Cartas Tarot Rider-Waite</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ddd;
+            font-style: italic;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .draw-button {
+            background: linear-gradient(45deg, #8b4513, #a0522d);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .draw-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        .draw-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: linear-gradient(145deg, #2a2a3e, #1f1f32);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border: 2px solid #ffd700;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+
+        .card-back {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, #4b0082, #8b008b, #4b0082);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-back::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,215,0,0.1) 10px,
+                rgba(255,215,0,0.1) 20px
+            );
+        }
+
+        .card-back-text {
+            color: #ffd700;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            z-index: 1;
+        }
+
+        .card-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .card-orientation {
+            font-size: 1rem;
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .card-orientation.upright {
+            color: #4ecdc4;
+        }
+
+        .card-description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #ddd;
+            text-align: justify;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #ffd700;
+            margin: 40px 0;
+        }
+
+        @keyframes flipCard {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        .card.flipping {
+            animation: flipCard 0.6s ease-in-out;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="header">
+                <h1 class="title">🔮 Tarot Rider-Waite 🔮</h1>
+                <p class="subtitle">Selecciona 3 cartas de forma aleatoria</p>
+            </div>
+
+            <div class="controls">
+                <button 
+                    class="draw-button" 
+                    @click="drawCards" 
+                    :disabled="isDrawing"
+                >
+                    {{ isDrawing ? 'Seleccionando...' : 'Seleccionar 3 Cartas' }}
+                </button>
+            </div>
+
+            <div v-if="isDrawing" class="loading">
+                ✨ Las cartas están siendo seleccionadas... ✨
+            </div>
+
+            <div v-if="selectedCards.length > 0" class="cards-container">
+                <div 
+                    v-for="(card, index) in selectedCards" 
+                    :key="index" 
+                    class="card"
+                    :class="{ show: card.revealed, flipping: card.flipping }"
+                >
+                    <div class="card-back">
+                        <div class="card-back-text">TAROT</div>
+                    </div>
+                    <h3 class="card-name">{{ card.name }}</h3>
+                    <p class="card-orientation" :class="{ upright: card.upright }">
+                        {{ card.upright ? '⬆️ Derecha' : '⬇️ Invertida' }}
+                    </p>
+                    <p class="card-description">{{ card.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    isDrawing: false,
+                    selectedCards: [],
+                    tarotDeck: [
+                        // Arcanos Mayores
+                        { name: "El Loco", description: "Nuevos comienzos, espontaneidad, inocencia. Representa el inicio de un viaje espiritual." },
+                        { name: "El Mago", description: "Manifestación, voluntad, poder personal. Capacidad de transformar ideas en realidad." },
+                        { name: "La Sacerdotisa", description: "Intuición, misterio, sabiduría interior. Conexión con el subconsciente." },
+                        { name: "La Emperatriz", description: "Creatividad, fertilidad, abundancia. Energía maternal y nutritiva." },
+                        { name: "El Emperador", description: "Autoridad, estructura, control. Liderazgo y estabilidad." },
+                        { name: "El Hierofante", description: "Tradición, conformidad, educación. Busqueda de significado espiritual." },
+                        { name: "Los Enamorados", description: "Amor, armonía, relaciones. Decisiones importantes del corazón." },
+                        { name: "El Carro", description: "Control, voluntad, victoria. Determinación para superar obstáculos." },
+                        { name: "La Fuerza", description: "Fuerza interior, valor, paciencia. Dominio de los instintos." },
+                        { name: "El Ermitaño", description: "Búsqueda interior, orientación, soledad. Sabiduría que viene de la experiencia." },
+                        { name: "La Rueda de la Fortuna", description: "Cambio, ciclos, destino. Los altibajos de la vida." },
+                        { name: "La Justicia", description: "Justicia, equidad, verdad. Karma y consecuencias de las acciones." },
+                        { name: "El Colgado", description: "Suspensión, abandono, sacrificio. Nueva perspectiva a través de la pausa." },
+                        { name: "La Muerte", description: "Transformación, renacimiento, final de ciclos. Cambios necesarios." },
+                        { name: "La Templanza", description: "Equilibrio, moderación, paciencia. Armonía entre opuestos." },
+                        { name: "El Diablo", description: "Tentación, materialismo, esclavitud. Liberación de ataduras autoimpuestas." },
+                        { name: "La Torre", description: "Cambio súbito, revelación, ruptura. Destrucción de ilusiones." },
+                        { name: "La Estrella", description: "Esperanza, inspiración, espiritualidad. Guía en la oscuridad." },
+                        { name: "La Luna", description: "Ilusión, miedo, subconsciente. Navegando la incertidumbre." },
+                        { name: "El Sol", description: "Alegría, éxito, vitalidad. Energía positiva y claridad." },
+                        { name: "El Juicio", description: "Reflexión, perdón, renacimiento. Despertar espiritual." },
+                        { name: "El Mundo", description: "Culminación, logro, plenitud. Completar un ciclo importante." },
+
+                        // Arcanos Menores - Copas
+                        { name: "As de Copas", description: "Nuevos sentimientos, amor, intuición. Apertura emocional." },
+                        { name: "Dos de Copas", description: "Asociación, atracción mutua, relaciones. Conexión emocional." },
+                        { name: "Tres de Copas", description: "Celebración, amistad, creatividad. Alegría compartida." },
+                        { name: "Cuatro de Copas", description: "Apatía, contemplación, descontento. Reevaluación de prioridades." },
+                        { name: "Cinco de Copas", description: "Desilusión, pérdida, dolor. Superar la tristeza." },
+                        { name: "Seis de Copas", description: "Nostalgia, inocencia, recuerdos. Conexión con el pasado." },
+                        { name: "Siete de Copas", description: "Ilusiones, opciones, fantasía. Claridad en las decisiones." },
+                        { name: "Ocho de Copas", description: "Abandono, búsqueda, desilusión. Búsqueda de significado más profundo." },
+                        { name: "Nueve de Copas", description: "Satisfacción, deseos cumplidos, placer. Realización emocional." },
+                        { name: "Diez de Copas", description: "Felicidad familiar, armonía, plenitud. Satisfacción completa." },
+                        { name: "Sota de Copas", description: "Mensajes emocionales, intuición, creatividad. Nuevas oportunidades emocionales." },
+                        { name: "Caballero de Copas", description: "Romance, idealismo, seguir el corazón. Purseguir sueños emocionales." },
+                        { name: "Reina de Copas", description: "Compasión, intuición, cuidado. Sabiduría emocional." },
+                        { name: "Rey de Copas", description: "Control emocional, compasión, diplomacia. Equilibrio entre corazón y mente." },
+
+                        // Arcanos Menores - Espadas
+                        { name: "As de Espadas", description: "Nuevas ideas, claridad mental, verdad. Poder del intelecto." },
+                        { name: "Dos de Espadas", description: "Decisiones difíciles, equilibrio, estancamiento. Buscar claridad." },
+                        { name: "Tres de Espadas", description: "Dolor emocional, separación, tristeza. Sanación del corazón." },
+                        { name: "Cuatro de Espadas", description: "Descanso, meditación, recuperación. Pausa necesaria." },
+                        { name: "Cinco de Espadas", description: "Conflicto, derrota, deshonor. Consecuencias de las batallas." },
+                        { name: "Seis de Espadas", description: "Transición, mudanza, avanzar. Dejar atrás problemas." },
+                        { name: "Siete de Espadas", description: "Engaño, estrategia, escape. Actuar con cautela." },
+                        { name: "Ocho de Espadas", description: "Restricción, víctima, limitaciones. Liberarse de ataduras mentales." },
+                        { name: "Nueve de Espadas", description: "Ansiedad, pesadillas, culpa. Enfrentar miedos internos." },
+                        { name: "Diez de Espadas", description: "Dolor, traición, final. Tocar fondo antes del renacimiento." },
+                        { name: "Sota de Espadas", description: "Vigilancia, curiosidad, astucia. Nueva información o ideas." },
+                        { name: "Caballero de Espadas", description: "Acción impulsiva, prisa, agresión. Energía mental dirigida." },
+                        { name: "Reina de Espadas", description: "Independencia, percepción, claridad. Sabiduría a través de la experiencia." },
+                        { name: "Rey de Espadas", description: "Autoridad intelectual, verdad, claridad mental. Liderazgo justo." },
+
+                        // Arcanos Menores - Bastos
+                        { name: "As de Bastos", description: "Nuevas oportunidades, inspiración, crecimiento. Energía creativa." },
+                        { name: "Dos de Bastos", description: "Planificación, decisiones futuras, control personal. Planificar el futuro." },
+                        { name: "Tres de Bastos", description: "Expansión, previsión, liderazgo. Resultados de esfuerzos pasados." },
+                        { name: "Cuatro de Bastos", description: "Celebración, armonía, hogar. Estabilidad y alegría." },
+                        { name: "Cinco de Bastos", description: "Competencia, conflicto, lucha. Desafíos que fortalecen." },
+                        { name: "Seis de Bastos", description: "Victoria, reconocimiento, éxito. Triunfo merecido." },
+                        { name: "Siete de Bastos", description: "Desafío, perseverancia, mantener posición. Defender logros." },
+                        { name: "Ocho de Bastos", description: "Velocidad, acción, movimiento. Progreso rápido." },
+                        { name: "Nueve de Bastos", description: "Resistencia, persistencia, defensiva. Última etapa antes del éxito." },
+                        { name: "Diez de Bastos", description: "Responsabilidad, carga, trabajo duro. Peso del éxito." },
+                        { name: "Sota de Bastos", description: "Inspiración, ideas, descubrimiento. Nuevos proyectos creativos." },
+                        { name: "Caballero de Bastos", description: "Aventura, impulsividad, pasión. Acción decidida." },
+                        { name: "Reina de Bastos", description: "Confianza, determinación, independencia. Energía femenina fuerte." },
+                        { name: "Rey de Bastos", description: "Liderazgo natural, visión, honor. Autoridad inspiradora." },
+
+                        // Arcanos Menores - Pentáculos
+                        { name: "As de Pentáculos", description: "Nueva oportunidad financiera, manifestación, abundancia. Semilla de prosperidad." },
+                        { name: "Dos de Pentáculos", description: "Equilibrio, adaptabilidad, tiempo de gestión. Malabarismo de prioridades." },
+                        { name: "Tres de Pentáculos", description: "Trabajo en equipo, colaboración, aprendizaje. Construcción de habilidades." },
+                        { name: "Cuatro de Pentáculos", description: "Control, estabilidad, posesividad. Conservar recursos." },
+                        { name: "Cinco de Pentáculos", description: "Pérdida financiera, pobreza, aislamiento. Tiempos difíciles." },
+                        { name: "Seis de Pentáculos", description: "Generosidad, caridad, intercambio justo. Dar y recibir." },
+                        { name: "Siete de Pentáculos", description: "Evaluación, paciencia, inversión a largo plazo. Esperar resultados." },
+                        { name: "Ocho de Pentáculos", description: "Artesanía, habilidad, trabajo dedicado. Perfeccionar talentos." },
+                        { name: "Nueve de Pentáculos", description: "Abundancia, lujo, autosuficiencia. Disfrutar del éxito." },
+                        { name: "Diez de Pentáculos", description: "Riqueza, herencia, familia. Seguridad financiera a largo plazo." },
+                        { name: "Sota de Pentáculos", description: "Manifestación, oportunidad financiera, habilidad. Nuevos comienzos materiales." },
+                        { name: "Caballero de Pentáculos", description: "Eficiencia, rutina, conservadurismo. Progreso constante y metódico." },
+                        { name: "Reina de Pentáculos", description: "Practicidad, seguridad, crianza. Abundancia generosa." },
+                        { name: "Rey de Pentáculos", description: "Abundancia, seguridad, control. Éxito material y autoridad." }
+                    ]
+                }
+            },
+            methods: {
+                async drawCards() {
+                    this.isDrawing = true;
+                    this.selectedCards = [];
+
+                    // Simular tiempo de selección
+                    await this.delay(1000);
+
+                    // Barajar y seleccionar 3 cartas únicas
+                    const shuffledDeck = [...this.tarotDeck].sort(() => Math.random() - 0.5);
+                    const selected = shuffledDeck.slice(0, 3);
+
+                    // Crear cartas con orientación aleatoria
+                    for (let i = 0; i < selected.length; i++) {
+                        const card = {
+                            ...selected[i],
+                            upright: Math.random() > 0.5,
+                            revealed: false,
+                            flipping: false
+                        };
+
+                        this.selectedCards.push(card);
+                        
+                        // Revelar cartas con delay
+                        await this.delay(800);
+                        card.flipping = true;
+                        await this.delay(300);
+                        card.revealed = true;
+                        card.flipping = false;
+                    }
+
+                    this.isDrawing = false;
+                },
+                delay(ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
