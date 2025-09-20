@@ -158,31 +158,32 @@ const router = createRouter({
   ]
 })
 
-// Global guard to wait for auth initialization before any navigation
-router.beforeEach(async (to, from, next) => {
-  console.log('🔒 Global guard - Navigating to:', to.name, 'from:', from.name)
+// TEMPORARILY DISABLED: Global guard causing infinite loops
+// TODO: Fix auth initialization synchronization
+// router.beforeEach(async (to, from, next) => {
+//   console.log('🔒 Global guard - Navigating to:', to.name, 'from:', from.name)
 
-  const auth = useAuthStore()
+//   const auth = useAuthStore()
 
-  // Skip auth wait for public routes
-  const publicRoutes = ['landing', 'terms', 'privacy', 'cookies', 'debug', 'logout', 'checkout-success']
-  if (publicRoutes.includes(to.name)) {
-    console.log('🔓 Public route, proceeding without auth check')
-    next()
-    return
-  }
+//   // Skip auth wait for public routes
+//   const publicRoutes = ['landing', 'terms', 'privacy', 'cookies', 'debug', 'logout', 'checkout-success']
+//   if (publicRoutes.includes(to.name)) {
+//     console.log('🔓 Public route, proceeding without auth check')
+//     next()
+//     return
+//   }
 
-  // Wait for auth initialization only for protected routes
-  const authReady = await waitForAuthInitialization()
+//   // Wait for auth initialization only for protected routes
+//   const authReady = await waitForAuthInitialization()
 
-  if (!authReady) {
-    console.log('⚠️ Global guard - Auth failed to initialize, redirecting to landing')
-    next({ name: 'landing' })
-    return
-  }
+//   if (!authReady) {
+//     console.log('⚠️ Global guard - Auth failed to initialize, redirecting to landing')
+//     next({ name: 'landing' })
+//     return
+//   }
 
-  console.log('✅ Global guard - Auth ready, proceeding with navigation')
-  next()
-})
+//   console.log('✅ Global guard - Auth ready, proceeding with navigation')
+//   next()
+// })
 
 export default router
