@@ -90,7 +90,10 @@ const previousChats = [
             </nav>
 
             <div class="sidebar-actions">
-                <router-link to="/checkout" class="action-button upgrade-btn">Upgrade a Premium</router-link>
+                <router-link v-if="!auth.isPremiumUser" to="/checkout" class="action-button upgrade-btn">Upgrade a Premium</router-link>
+                <div v-else class="premium-badge-sidebar">
+                    ✨ Premium Activo
+                </div>
                 <button @click="logout" class="action-button logout-btn">Logout</button>
             </div>
         </div>
@@ -129,4 +132,15 @@ const previousChats = [
 .sidebar-footer { padding: 20px; text-align: center; font-size: 0.9rem; border-top: 1px solid #0f3460; }
 .sidebar-footer a { color: #aaa; text-decoration: none; }
 .sidebar-footer span { margin: 0 5px; }
+
+.premium-badge-sidebar {
+    padding: 12px;
+    border-radius: 5px;
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 237, 74, 0.1));
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
 </style>

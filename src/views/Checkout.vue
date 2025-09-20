@@ -163,7 +163,7 @@ const goBack = () => {
 }
 
 // Payment handlers
-const handlePaymentSuccess = (data) => {
+const handlePaymentSuccess = async (data) => {
     console.log('Payment successful:', data)
 
     // Store success info for the success page
@@ -175,6 +175,11 @@ const handlePaymentSuccess = (data) => {
 
     // Store in sessionStorage for the success page
     sessionStorage.setItem('paymentSuccess', JSON.stringify(successData))
+
+    // Reload user subscription data to reflect the new premium status
+    console.log('🔄 Reloading user subscription after successful payment...')
+    await auth.loadUserSubscription()
+    console.log('✅ User subscription reloaded:', auth.userSubscription)
 
     // Redirect to success page
     router.push('/checkout-success')
