@@ -153,6 +153,10 @@ const initPayPal = async () => {
       onCancel
     })
 
+    console.log('💰 PayPal: Container check - loading:', loading.value, 'error:', error.value)
+    console.log('💰 PayPal: Container element:', paypalButtonContainer.value)
+    console.log('💰 PayPal: Container exists:', !!paypalButtonContainer.value)
+
     if (paypalButtonContainer.value) {
       console.log('💰 PayPal: Rendering button...')
       await paypalInstance.value.render(paypalButtonContainer.value)
@@ -203,12 +207,17 @@ onUnmounted(() => {
         <p>Cargando PayPal...</p>
       </div>
 
-      <div v-else-if="error" class="error-state">
+      <div v-if="error" class="error-state">
         <p class="error-message">❌ {{ error }}</p>
         <button @click="initPayPal" class="retry-button">Reintentar</button>
       </div>
 
-      <div v-else ref="paypalButtonContainer" class="paypal-buttons"></div>
+      <!-- Always render the container, but hide it when loading/error -->
+      <div
+        ref="paypalButtonContainer"
+        class="paypal-buttons"
+        :style="{ display: (loading || error) ? 'none' : 'block' }"
+      ></div>
 
       <div class="payment-info">
         <p class="secure-text">🔒 Pago seguro procesado por PayPal</p>
