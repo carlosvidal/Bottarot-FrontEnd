@@ -6,10 +6,10 @@
       <pre>{{ debugInfo }}</pre>
 
       <h2>Environment Mode</h2>
-      <p><strong>NODE_ENV:</strong> {{ process.env.NODE_ENV }}</p>
-      <p><strong>MODE:</strong> {{ import.meta.env.MODE }}</p>
-      <p><strong>PROD:</strong> {{ import.meta.env.PROD }}</p>
-      <p><strong>DEV:</strong> {{ import.meta.env.DEV }}</p>
+      <p><strong>NODE_ENV:</strong> {{ envInfo.NODE_ENV }}</p>
+      <p><strong>MODE:</strong> {{ envInfo.MODE }}</p>
+      <p><strong>PROD:</strong> {{ envInfo.PROD }}</p>
+      <p><strong>DEV:</strong> {{ envInfo.DEV }}</p>
 
       <h2>Test API Connection</h2>
       <button @click="testApi" :disabled="loading">Test API</button>
@@ -33,6 +33,15 @@ const debugInfo = computed(() => {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '***' + import.meta.env.VITE_SUPABASE_ANON_KEY.slice(-10) : 'NOT_SET',
     VITE_PAYPAL_CLIENT_ID: import.meta.env.VITE_PAYPAL_CLIENT_ID ? '***' + import.meta.env.VITE_PAYPAL_CLIENT_ID.slice(-10) : 'NOT_SET'
+  }
+})
+
+const envInfo = computed(() => {
+  return {
+    NODE_ENV: typeof process !== 'undefined' ? process.env.NODE_ENV : 'undefined',
+    MODE: import.meta.env.MODE,
+    PROD: import.meta.env.PROD,
+    DEV: import.meta.env.DEV
   }
 })
 
