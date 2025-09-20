@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase.js'
@@ -46,8 +46,12 @@ const genderLabel = computed(() => {
 })
 
 const loadUserProfile = async () => {
-    if (!auth.user) return
+    if (!auth.user) {
+        console.log('Profile: No user available yet, waiting...')
+        return
+    }
 
+    console.log('Profile: Loading user profile for:', auth.user.id)
     try {
         const { data: profile, error } = await supabase
             .from('profiles')
@@ -55,7 +59,12 @@ const loadUserProfile = async () => {
             .eq('id', auth.user.id)
             .maybeSingle()
 
+        if (error) {
+            console.error('Error fetching profile:', error)
+        }
+
         if (profile) {
+            console.log('Profile: Data loaded successfully:', profile)
             userProfile.value = profile
             // Initialize edit form with current data
             editForm.value = {
@@ -65,6 +74,8 @@ const loadUserProfile = async () => {
                 timezone: profile.timezone || 'America/Mexico_City',
                 language: profile.language || 'es'
             }
+        } else {
+            console.log('Profile: No profile found, user may need to complete registration')
         }
     } catch (error) {
         console.error('Error loading user profile:', error)
@@ -108,8 +119,20 @@ const saveProfile = async () => {
     saving.value = false
 }
 
+// Watch for auth user changes
+watch(() => auth.user, (newUser) => {
+    if (newUser) {
+        console.log('Profile: Auth user available, loading profile...')
+        loadUserProfile()
+    }
+}, { immediate: true })
+
+// Also try on mounted
 onMounted(() => {
-    loadUserProfile()
+    console.log('Profile: Component mounted, auth.user:', !!auth.user)
+    if (auth.user) {
+        loadUserProfile()
+    }
 })
 </script>
 

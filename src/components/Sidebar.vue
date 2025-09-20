@@ -9,8 +9,10 @@ const router = useRouter();
 const userProfile = ref(null)
 
 const logout = () => {
-    auth.logout();
-    router.push('/');
+    // Same method as /logout route - clear everything and reload
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/';
 };
 
 // Get user's display name and avatar
