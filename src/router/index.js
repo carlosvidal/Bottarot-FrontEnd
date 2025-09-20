@@ -164,7 +164,15 @@ router.beforeEach(async (to, from, next) => {
 
   const auth = useAuthStore()
 
-  // Wait for auth initialization
+  // Skip auth wait for public routes
+  const publicRoutes = ['landing', 'terms', 'privacy', 'cookies', 'debug', 'logout', 'checkout-success']
+  if (publicRoutes.includes(to.name)) {
+    console.log('🔓 Public route, proceeding without auth check')
+    next()
+    return
+  }
+
+  // Wait for auth initialization only for protected routes
   const authReady = await waitForAuthInitialization()
 
   if (!authReady) {

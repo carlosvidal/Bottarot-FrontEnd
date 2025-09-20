@@ -73,7 +73,14 @@ export const useAuthStore = defineStore('auth', () => {
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('👤 User signed in, checking profile...')
         await checkUserProfile(session.user)
+        await loadUserSubscription()
         console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
+      }
+
+      // Mark as initialized after any auth state change
+      if (!isInitialized.value) {
+        console.log('✅ Auth initialization complete via auth state change')
+        isInitialized.value = true
       }
     })
   }
