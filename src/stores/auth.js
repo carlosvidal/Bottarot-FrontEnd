@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const needsRegistration = ref(false)
   const userSubscription = ref(null)
+  const isInitialized = ref(false)
 
   const isLoggedIn = computed(() => !!user.value)
   const isFullyRegistered = computed(() => isLoggedIn.value && !needsRegistration.value)
@@ -35,6 +36,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Initialize auth state
   const initAuth = async () => {
+    if (isInitialized.value) {
+      console.log('🔄 Auth already initialized, skipping...')
+      return
+    }
+
     loading.value = true
     try {
       console.log('🔄 Initializing auth...')
@@ -47,6 +53,8 @@ export const useAuthStore = defineStore('auth', () => {
         await checkUserProfile(session.user)
         await loadUserSubscription()
       }
+
+      isInitialized.value = true
     } catch (error) {
       console.error('Error getting session:', error)
     } finally {
@@ -322,6 +330,7 @@ export const useAuthStore = defineStore('auth', () => {
     isFullyRegistered,
     needsRegistration,
     loading,
+    isInitialized,
     // Subscription properties
     userSubscription,
     isSubscriptionActive,
