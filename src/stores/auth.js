@@ -70,9 +70,10 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  // Handle post-login redirect
+  // Handle post-login redirect - only redirect from landing page
   const handlePostLoginRedirect = async (router) => {
-    if (isLoggedIn.value && !needsRegistration.value) {
+    const currentRoute = router.currentRoute.value
+    if (isLoggedIn.value && !needsRegistration.value && currentRoute.name === 'landing') {
       router.push('/chat')
     }
   }
