@@ -11,6 +11,27 @@ import Checkout from '../views/Checkout.vue'
 import CheckoutSuccess from '../views/CheckoutSuccess.vue'
 import Debug from '../views/Debug.vue'
 
+// Helper function to wait for auth initialization
+async function waitForAuthInitialization() {
+  const auth = useAuthStore();
+
+  if (auth.isInitialized) {
+    return true;
+  }
+
+  console.log('🔄 Waiting for auth initialization...');
+
+  const maxWait = 5000; // 5 seconds max wait
+  const startTime = Date.now();
+
+  while (!auth.isInitialized && (Date.now() - startTime) < maxWait) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  console.log('✅ Auth initialization completed:', auth.isInitialized);
+  return auth.isInitialized;
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -135,6 +156,25 @@ const router = createRouter({
       }
     }
   ]
+})
+
+// Global guard to wait for auth initialization before any navigation
+router.beforeEach(async (to, from, next) => {
+  console.log('🔒 Global guard - Navigating to:', to.name, 'from:', from.name)
+
+  const auth = useAuthStore()
+
+  // Wait for auth initialization
+  const authReady = await waitForAuthInitialization()
+
+  if (!authReady) {
+    console.log('⚠️ Global guard - Auth failed to initialize, redirecting to landing')
+    next({ name: 'landing' })
+    return
+  }
+
+  console.log('✅ Global guard - Auth ready, proceeding with navigation')
+  next()
 })
 
 export default router
