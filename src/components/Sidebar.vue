@@ -1,14 +1,63 @@
 <script setup>
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
+import { supabase } from '../lib/supabase.js'
 
 const auth = useAuthStore();
 const router = useRouter();
+const userProfile = ref(null)
 
 const logout = () => {
     auth.logout();
     router.push('/');
 };
+
+// Get user's display name and avatar
+const userName = computed(() => {
+    if (userProfile.value?.name) {
+        return userProfile.value.name
+    }
+    if (auth.user?.email) {
+        return auth.user.email.split('@')[0]
+    }
+    return 'Usuario'
+})
+
+const userAvatar = computed(() => {
+    if (userProfile.value?.name) {
+        return userProfile.value.name.charAt(0).toUpperCase()
+    }
+    if (auth.user?.email) {
+        return auth.user.email.charAt(0).toUpperCase()
+    }
+    return 'U'
+})
+
+// Load user profile
+const loadUserProfile = async () => {
+    if (!auth.user) return
+
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', auth.user.id)
+            .maybeSingle()
+
+        if (profile) {
+            userProfile.value = profile
+        }
+    } catch (error) {
+        console.error('Error loading user profile:', error)
+    }
+}
+
+onMounted(() => {
+    if (auth.isLoggedIn) {
+        loadUserProfile()
+    }
+})
 
 // Placeholder data
 const previousChats = [
@@ -22,9 +71,9 @@ const previousChats = [
     <aside class="sidebar">
         <div class="sidebar-content">
             <div class="profile-section">
-                <div class="avatar">U</div>
+                <div class="avatar">{{ userAvatar }}</div>
                 <div class="profile-info">
-                    <span class="username">Usuario</span>
+                    <span class="username">{{ userName }}</span>
                     <router-link to="/profile" class="profile-link">Ver Perfil</router-link>
                 </div>
             </div>

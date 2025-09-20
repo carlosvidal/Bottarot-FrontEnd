@@ -13,7 +13,9 @@ app.use(router)
 
 // Initialize auth after pinia and router are set up
 const authStore = useAuthStore()
-authStore.initAuth()
 authStore.setupAuthListener()
 
-app.mount('#app')
+// Initialize auth and mount app
+authStore.initAuth().then(() => {
+  app.mount('#app')
+})

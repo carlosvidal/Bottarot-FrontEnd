@@ -1,11 +1,22 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
-const userQuestion = ref('');
+
+// Watch for auth state changes and redirect when user becomes fully registered
+watch(
+  () => auth.isFullyRegistered,
+  (isFullyRegistered) => {
+    console.log('👀 Watcher: isFullyRegistered changed to:', isFullyRegistered)
+    if (isFullyRegistered) {
+      console.log('🚀 Redirecting to chat...')
+      router.push('/chat');
+    }
+  }
+);
 
 // State for the new sign-up flow
 const showSignupForm = ref(false);
@@ -14,115 +25,148 @@ const acceptedTerms = ref(false);
 // State for disclaimer
 const isDisclaimerExpanded = ref(false);
 
-const startChat = () => {
-    if (!userQuestion.value.trim()) {
-        router.push('/chat');
-        return;
+// Removed startChat - no longer needed
+
+const handleGoogleLogin = async () => {
+    console.log('📱 Starting Google login...')
+    const { error } = await auth.loginWithGoogle();
+    if (error) {
+        console.error('❌ Error with Google login:', error);
+    } else {
+        console.log('✅ Google login successful. Current auth state:', {
+            isLoggedIn: auth.isLoggedIn,
+            needsRegistration: auth.needsRegistration,
+            isFullyRegistered: auth.isFullyRegistered
+        })
+        // Check if user is fully registered after a short delay to allow auth state to update
+        setTimeout(() => {
+            console.log('⏰ Timeout check - isFullyRegistered:', auth.isFullyRegistered)
+            if (auth.isFullyRegistered) {
+                console.log('🚀 Redirecting to chat from timeout...')
+                router.push('/chat');
+            }
+        }, 1000);
     }
-    router.push({ path: '/chat', query: { q: userQuestion.value } });
+};
+
+const handleFacebookLogin = async () => {
+    const { error } = await auth.loginWithFacebook();
+    if (error) {
+        console.error('Error with Facebook login:', error);
+    } else {
+        // Check if user is fully registered after a short delay to allow auth state to update
+        setTimeout(() => {
+            if (auth.isFullyRegistered) {
+                router.push('/chat');
+            }
+        }, 1000);
+    }
 };
 
 const displaySignupForm = () => {
     showSignupForm.value = true;
 };
 
-const handleSignup = () => {
+const handleSignup = async (event) => {
     if (!acceptedTerms.value) return;
-    // In a real app, you'd save the form data here.
-    auth.login();
-    showSignupForm.value = false; // Reset view for next time
+
+    // Get form data
+    const formData = new FormData(event.target);
+    const profileData = {
+        name: formData.get('name'),
+        gender: formData.get('gender'),
+        dateOfBirth: formData.get('dob')
+    };
+
+    // Complete registration in Supabase
+    const { error } = await auth.completeRegistration(profileData);
+
+    if (error) {
+        console.error('Error completing registration:', error);
+        // You could show an error message here
+    } else {
+        showSignupForm.value = false;
+        // Redirect to chat after successful registration
+        router.push('/chat');
+    }
 };
 
 </script>
 
 <template>
     <div class="landing-container">
-        <!-- Temporary simulation controls -->
-        <div class="simulation-controls">
-            <p>Simulación:</p>
-            <button @click="auth.login">Login</button>
-            <button @click="auth.logout">Logout</button>
-        </div>
 
         <div class="main-content">
             <h1 class="title">🔮 Oráculo IA 🔮</h1>
             
-            <!-- LOGGED-OUT & SIGNUP FLOW -->
-            <div v-if="!auth.isLoggedIn">
-                <!-- Default Logged-out View -->
-                <div v-if="!showSignupForm">
-                    <p class="subtitle">Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.</p>
-                    <div class="social-login">
-                        <p>Regístrate o inicia sesión con:</p>
-                        <div class="social-buttons">
-                            <button @click="displaySignupForm" class="social-btn google">Google</button>
-                            <button @click="displaySignupForm" class="social-btn facebook">Facebook</button>
-                            <button @click="displaySignupForm" class="social-btn tiktok">TikTok</button>
-                        </div>
-                    </div>
-                    <div class="offer-section">
-                        <h2>Nuestra Oferta</h2>
-                        <div class="offers">
-                            <div class="offer-card">
-                                <h3>Gratis</h3>
-                                <p>1 pregunta a la semana, para siempre.</p>
-                            </div>
-                            <router-link to="/checkout" class="offer-card-link">
-                                <div class="offer-card premium">
-                                    <h3>Semana de Lanzamiento</h3>
-                                    <p>Preguntas ilimitadas por solo <strong>$1</strong>.</p>
-                                </div>
-                            </router-link>
-                            <router-link to="/checkout" class="offer-card-link">
-                                <div class="offer-card">
-                                    <h3>Ilimitado</h3>
-                                    <p><strong>$5</strong> por semana de preguntas ilimitadas.</p>
-                                </div>
-                            </router-link>
-                        </div>
+            <!-- Default Logged-out View -->
+            <div v-if="!showSignupForm && !auth.needsRegistration">
+                <p class="subtitle">Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.</p>
+                <div class="social-login">
+                    <p>Regístrate o inicia sesión con:</p>
+                    <div class="social-buttons">
+                        <button @click="handleGoogleLogin" class="social-btn google" :disabled="auth.loading">
+                            {{ auth.loading ? 'Cargando...' : 'Google' }}
+                        </button>
+                        <button @click="handleFacebookLogin" class="social-btn facebook" :disabled="auth.loading">
+                            {{ auth.loading ? 'Cargando...' : 'Facebook' }}
+                        </button>
+                        <button @click="displaySignupForm" class="social-btn tiktok">TikTok</button>
                     </div>
                 </div>
-
-                <!-- Sign-up Form View -->
-                <div v-else class="signup-form-container">
-                    <h2 class="signup-title">Casi listo...</h2>
-                    <p class="subtitle">Completa tu perfil para continuar.</p>
-                    <form @submit.prevent="handleSignup" class="signup-form">
-                        <div class="form-group">
-                            <label for="name">Nombre</label>
-                            <input type="text" id="name" placeholder="Tu nombre" required>
+                <div class="offer-section">
+                    <h2>Nuestra Oferta</h2>
+                    <div class="offers">
+                        <div class="offer-card">
+                            <h3>Gratis</h3>
+                            <p>1 pregunta a la semana, para siempre.</p>
                         </div>
-                        <div class="form-group">
-                            <label for="gender">Género</label>
-                            <select id="gender" required>
-                                <option value="" disabled selected>Selecciona una opción</option>
-                                <option value="male">Masculino</option>
-                                <option value="female">Femenino</option>
-                                <option value="non-binary">No binario</option>
-                                <option value="prefer-not-to-say">Prefiero no decir</option>
-                                <option value="other">Otro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="dob">Fecha de Nacimiento</label>
-                            <input type="date" id="dob" required>
-                        </div>
-                        <div class="form-group terms">
-                            <input type="checkbox" id="terms" v-model="acceptedTerms">
-                            <label for="terms">Acepto los <router-link to="/terms" target="_blank">Términos y Condiciones</router-link>.</label>
-                        </div>
-                        <button type="submit" class="main-cta-button" :disabled="!acceptedTerms">Finalizar Registro</button>
-                    </form>
+                        <router-link to="/checkout" class="offer-card-link">
+                            <div class="offer-card premium">
+                                <h3>Semana de Lanzamiento</h3>
+                                <p>Preguntas ilimitadas por solo <strong>$1</strong>.</p>
+                            </div>
+                        </router-link>
+                        <router-link to="/checkout" class="offer-card-link">
+                            <div class="offer-card">
+                                <h3>Ilimitado</h3>
+                                <p><strong>$5</strong> por semana de preguntas ilimitadas.</p>
+                            </div>
+                        </router-link>
+                    </div>
                 </div>
             </div>
 
-            <!-- LOGGED-IN VIEW -->
-            <div v-else class="loggedin-view">
-                <p class="subtitle">Bienvenido de nuevo. El oráculo espera tu consulta.</p>
-                <div class="initial-chat-box">
-                    <textarea v-model="userQuestion" class="question-input" placeholder="Escribe tu pregunta aquí para comenzar una nueva lectura..."></textarea>
-                    <button @click="startChat" class="main-cta-button">Iniciar Lectura</button>
-                </div>
+            <!-- Sign-up Form View -->
+            <div v-if="showSignupForm || auth.needsRegistration" class="signup-form-container">
+                <h2 class="signup-title">Casi listo...</h2>
+                <p class="subtitle">Completa tu perfil para continuar.</p>
+                <form @submit.prevent="handleSignup" class="signup-form">
+                    <div class="form-group">
+                        <label for="name">Nombre</label>
+                        <input type="text" id="name" name="name" placeholder="Tu nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Género</label>
+                        <select id="gender" name="gender" required>
+                            <option value="" disabled selected>Selecciona una opción</option>
+                            <option value="male">Masculino</option>
+                            <option value="female">Femenino</option>
+                            <option value="non-binary">No binario</option>
+                            <option value="prefer-not-to-say">Prefiero no decir</option>
+                            <option value="other">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Fecha de Nacimiento</label>
+                        <input type="date" id="dob" name="dob" required>
+                    </div>
+                    <div class="form-group terms">
+                        <input type="checkbox" id="terms" v-model="acceptedTerms">
+                        <label for="terms">Acepto los <router-link to="/terms" target="_blank">Términos y Condiciones</router-link>.</label>
+                    </div>
+                    <button type="submit" class="main-cta-button" :disabled="!acceptedTerms">Finalizar Registro</button>
+                </form>
             </div>
 
             <div class="disclaimer">
@@ -149,11 +193,6 @@ const handleSignup = () => {
 .title { font-size: 3.5rem; color: #ffd700; text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.6); margin-bottom: 15px; }
 .subtitle { font-size: 1.3rem; color: #ddd; font-style: italic; margin-bottom: 40px; line-height: 1.6; }
 
-/* Logged-in View */
-.loggedin-view .subtitle { margin-bottom: 30px; }
-.initial-chat-box { max-width: 600px; margin: 0 auto 40px; }
-.question-input { display: block; width: 100%; padding: 15px; font-family: 'Georgia', serif; font-size: 1.1rem; color: #f4f4f4; background-color: rgba(22, 33, 62, 0.5); border: 2px solid #0f3460; border-radius: 8px; resize: vertical; min-height: 100px; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3); transition: all 0.3s ease; margin-bottom: 20px; }
-.question-input:focus { outline: none; border-color: #ffd700; }
 
 /* CTA */
 .main-cta-button { background: linear-gradient(45deg, #8b4513, #a0522d); color: white; text-decoration: none; padding: 18px 40px; font-size: 1.4rem; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); display: inline-block; border: none; }
@@ -168,7 +207,8 @@ const handleSignup = () => {
 .social-btn.google { background-color: #DB4437; }
 .social-btn.facebook { background-color: #4267B2; }
 .social-btn.tiktok { background-color: #000000; }
-.social-btn:hover { opacity: 0.8; }
+.social-btn:hover:not(:disabled) { opacity: 0.8; }
+.social-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Offers */
 .offer-section { margin-bottom: 40px; }
@@ -203,8 +243,4 @@ const handleSignup = () => {
 .footer a:hover, .footer .router-link-active:hover { color: #ffd700; }
 .footer span { color: #555; }
 
-/* Simulation controls */
-.simulation-controls { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; z-index: 1000; display: flex; gap: 10px; align-items: center; }
-.simulation-controls p { margin: 0; color: white; font-size: 0.9rem; }
-.simulation-controls button { background: #555; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
 </style>
