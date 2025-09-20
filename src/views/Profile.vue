@@ -127,6 +127,20 @@ watch(() => auth.user, (newUser) => {
     }
 }, { immediate: true })
 
+// Format date function
+const formatDate = (dateString) => {
+    if (!dateString) return 'No disponible'
+    try {
+        return new Date(dateString).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
+    } catch (error) {
+        return 'Fecha inválida'
+    }
+}
+
 // Also try on mounted
 onMounted(() => {
     console.log('Profile: Component mounted, auth.user:', !!auth.user)
@@ -170,7 +184,10 @@ onMounted(() => {
                     <strong>Miembro desde:</strong> {{ userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString('es-ES') : 'No disponible' }}
                 </div>
                 <div class="profile-field">
-                    <strong>Plan:</strong> Gratuito
+                    <strong>Plan:</strong> {{ auth.currentPlan }}
+                    <span v-if="auth.isPremiumUser && auth.userSubscription?.subscription_end_date" class="subscription-info">
+                        (Renovación: {{ formatDate(auth.userSubscription.subscription_end_date) }})
+                    </span>
                 </div>
             </div>
 
@@ -238,7 +255,11 @@ onMounted(() => {
             <div class="actions">
                 <router-link to="/chat" class="back-button">Volver al Chat</router-link>
                 <button v-if="!editing" @click="startEditing" class="edit-button">Editar Perfil</button>
-                <router-link to="/checkout" class="upgrade-button">Upgrade a Premium</router-link>
+                <router-link v-if="!auth.isPremiumUser" to="/checkout" class="upgrade-button">Upgrade a Premium</router-link>
+                <div v-else class="premium-status">
+                    <span class="premium-badge">✨ Usuario Premium</span>
+                    <p class="renewal-info">Renovación: {{ formatDate(auth.userSubscription?.subscription_end_date) }}</p>
+                </div>
             </div>
         </div>
     </div>
@@ -457,5 +478,34 @@ p {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+.premium-status {
+    text-align: center;
+    padding: 15px;
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 237, 74, 0.1));
+    border: 2px solid #ffd700;
+}
+
+.premium-badge {
+    color: #ffd700;
+    font-size: 1.2rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.renewal-info {
+    color: #ddd;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.subscription-info {
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-left: 8px;
 }
 </style>
