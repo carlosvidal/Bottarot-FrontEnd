@@ -6,9 +6,32 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const loading = ref(false)
   const needsRegistration = ref(false)
+  const userSubscription = ref(null)
 
   const isLoggedIn = computed(() => !!user.value)
   const isFullyRegistered = computed(() => isLoggedIn.value && !needsRegistration.value)
+
+  // Subscription related computed properties
+  const isSubscriptionActive = computed(() => {
+    if (!userSubscription.value) return false
+    const now = new Date()
+    const endDate = new Date(userSubscription.value.subscription_end_date)
+    return userSubscription.value.has_active_subscription && endDate > now
+  })
+
+  const isPremiumUser = computed(() => isSubscriptionActive.value)
+
+  const canAskQuestion = computed(() => {
+    return userSubscription.value?.can_ask_question || false
+  })
+
+  const questionsRemaining = computed(() => {
+    return userSubscription.value?.questions_remaining || 0
+  })
+
+  const currentPlan = computed(() => {
+    return userSubscription.value?.plan_name || 'Gratuito'
+  })
 
   // Initialize auth state
   const initAuth = async () => {
@@ -19,9 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = session?.user || null
       console.log('🔑 Session loaded:', !!session?.user)
 
-      // If we have a user, check their profile
+      // If we have a user, check their profile and subscription
       if (session?.user) {
         await checkUserProfile(session.user)
+        await loadUserSubscription()
       }
     } catch (error) {
       console.error('Error getting session:', error)
@@ -211,6 +235,70 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Load user subscription info
+  const loadUserSubscription = async () => {
+    if (!user.value?.id) return
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL
+      const response = await fetch(`${API_URL}/api/user/subscription/${user.value.id}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        userSubscription.value = data
+      } else {
+        console.error('Error loading subscription:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error loading user subscription:', error)
+    }
+  }
+
+  // Check if user can ask a question
+  const checkCanAskQuestion = async () => {
+    if (!user.value?.id) return false
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL
+      const response = await fetch(`${API_URL}/api/user/can-ask/${user.value.id}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.canAsk
+      }
+    } catch (error) {
+      console.error('Error checking question permission:', error)
+    }
+    return false
+  }
+
+  // Record a user question
+  const recordQuestion = async (question, response, cards = [], isPremium = false) => {
+    if (!user.value?.id) return
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL
+      await fetch(`${API_URL}/api/user/question`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.value.id,
+          question,
+          response,
+          cards,
+          isPremium
+        })
+      })
+
+      // Reload subscription info to update question count
+      await loadUserSubscription()
+    } catch (error) {
+      console.error('Error recording question:', error)
+    }
+  }
+
   // Logout
   const logout = async () => {
     loading.value = true
@@ -219,6 +307,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (error) throw error
       user.value = null
       needsRegistration.value = false
+      userSubscription.value = null
     } catch (error) {
       console.error('Error logging out:', error)
     } finally {
@@ -232,6 +321,14 @@ export const useAuthStore = defineStore('auth', () => {
     isFullyRegistered,
     needsRegistration,
     loading,
+    // Subscription properties
+    userSubscription,
+    isSubscriptionActive,
+    isPremiumUser,
+    canAskQuestion,
+    questionsRemaining,
+    currentPlan,
+    // Auth functions
     initAuth,
     setupAuthListener,
     handlePostLoginRedirect,
@@ -241,6 +338,10 @@ export const useAuthStore = defineStore('auth', () => {
     signUpWithEmail,
     completeRegistration,
     updateProfile,
-    logout
+    logout,
+    // Subscription functions
+    loadUserSubscription,
+    checkCanAskQuestion,
+    recordQuestion
   }
 })

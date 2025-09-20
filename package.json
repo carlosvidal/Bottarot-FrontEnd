@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@paypal/paypal-js": "^8.4.2",
     "@supabase/supabase-js": "^2.57.4",
     "pinia": "^3.0.3",
     "vue": "^3.5.18",
