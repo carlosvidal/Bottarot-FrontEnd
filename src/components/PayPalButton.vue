@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { loadScript } from '@paypal/paypal-js'
 import { useAuthStore } from '../stores/auth'
 
@@ -171,9 +171,11 @@ const initPayPal = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   console.log('💰 PayPal: Component mounted. User ID:', auth.user?.id)
   if (auth.user?.id) {
+    // Wait for DOM to be fully rendered
+    await nextTick()
     initPayPal()
   } else {
     console.warn('💰 PayPal: User not authenticated')
@@ -190,23 +192,23 @@ onUnmounted(() => {
 
 <template>
   <div class="paypal-button-wrapper">
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando PayPal...</p>
-    </div>
-
-    <div v-else-if="error" class="error-state">
-      <p class="error-message">❌ {{ error }}</p>
-      <button @click="initPayPal" class="retry-button">Reintentar</button>
-    </div>
-
-    <div v-else class="paypal-container">
+    <div class="paypal-container">
       <div class="plan-summary">
         <h3>{{ planName }}</h3>
         <p class="amount">${{ amount.toFixed(2) }} {{ currency }}</p>
       </div>
 
-      <div ref="paypalButtonContainer" class="paypal-buttons"></div>
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando PayPal...</p>
+      </div>
+
+      <div v-else-if="error" class="error-state">
+        <p class="error-message">❌ {{ error }}</p>
+        <button @click="initPayPal" class="retry-button">Reintentar</button>
+      </div>
+
+      <div v-else ref="paypalButtonContainer" class="paypal-buttons"></div>
 
       <div class="payment-info">
         <p class="secure-text">🔒 Pago seguro procesado por PayPal</p>
