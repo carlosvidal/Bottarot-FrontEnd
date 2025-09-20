@@ -7,7 +7,9 @@
             <button class="header-action">Nuevo</button>
             <button class="header-action">Añadir a favoritos</button>
             <button class="header-action">Compartir</button>
+
         </div>
+
     </header>
 </template>
 
@@ -46,4 +48,5 @@
     background-color: #0f3460;
     color: #ffd700;
 }
+
 </style>

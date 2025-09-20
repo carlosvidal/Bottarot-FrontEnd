@@ -5,27 +5,77 @@ import { supabase } from '../lib/supabase.js'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const loading = ref(false)
+  const needsRegistration = ref(false)
 
   const isLoggedIn = computed(() => !!user.value)
+  const isFullyRegistered = computed(() => isLoggedIn.value && !needsRegistration.value)
 
   // Initialize auth state
   const initAuth = async () => {
     loading.value = true
     try {
+      console.log('🔄 Initializing auth...')
       const { data: { session } } = await supabase.auth.getSession()
       user.value = session?.user || null
+      console.log('🔑 Session loaded:', !!session?.user)
+
+      // If we have a user, check their profile
+      if (session?.user) {
+        await checkUserProfile(session.user)
+      }
     } catch (error) {
       console.error('Error getting session:', error)
     } finally {
       loading.value = false
+      console.log('✅ Auth initialization complete')
     }
   }
 
   // Listen for auth changes
   const setupAuthListener = () => {
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔔 Auth state change:', event, !!session?.user)
       user.value = session?.user || null
+
+      // If user just signed in and doesn't have profile data, they need to complete registration
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('👤 User signed in, checking profile...')
+        await checkUserProfile(session.user)
+        console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
+      }
     })
+  }
+
+  // Handle post-login redirect
+  const handlePostLoginRedirect = async (router) => {
+    if (isLoggedIn.value && !needsRegistration.value) {
+      router.push('/chat')
+    }
+  }
+
+  // Check if user needs to complete profile
+  const checkUserProfile = async (user) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error checking user profile:', error)
+        return
+      }
+
+      if (!profile) {
+        // Profile doesn't exist, user needs to complete registration
+        needsRegistration.value = true
+      } else {
+        needsRegistration.value = false
+      }
+    } catch (error) {
+      console.error('Error checking user profile:', error)
+    }
   }
 
   // Login with Google
@@ -104,6 +154,63 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Complete user registration
+  const completeRegistration = async (profileData) => {
+    loading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: user.value.id,
+            email: user.value.email,
+            name: profileData.name,
+            gender: profileData.gender,
+            date_of_birth: profileData.dateOfBirth,
+            timezone: profileData.timezone || 'America/Mexico_City',
+            language: profileData.language || 'es',
+            created_at: new Date().toISOString()
+          }
+        ])
+
+      if (error) throw error
+
+      needsRegistration.value = false
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error completing registration:', error)
+      return { data: null, error }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Update user profile
+  const updateProfile = async (profileData) => {
+    loading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          name: profileData.name,
+          gender: profileData.gender,
+          date_of_birth: profileData.dateOfBirth,
+          timezone: profileData.timezone,
+          language: profileData.language
+        })
+        .eq('id', user.value.id)
+
+      if (error) throw error
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      return { data: null, error }
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Logout
   const logout = async () => {
     loading.value = true
@@ -111,6 +218,7 @@ export const useAuthStore = defineStore('auth', () => {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       user.value = null
+      needsRegistration.value = false
     } catch (error) {
       console.error('Error logging out:', error)
     } finally {
@@ -121,13 +229,18 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     isLoggedIn,
+    isFullyRegistered,
+    needsRegistration,
     loading,
     initAuth,
     setupAuthListener,
+    handlePostLoginRedirect,
     loginWithGoogle,
     loginWithFacebook,
     loginWithEmail,
     signUpWithEmail,
+    completeRegistration,
+    updateProfile,
     logout
   }
 })
