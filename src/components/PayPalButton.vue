@@ -111,15 +111,18 @@ const onCancel = (data) => {
 
 const initPayPal = async () => {
   try {
+    console.log('💰 PayPal: Initializing PayPal button...')
     loading.value = true
     error.value = null
 
     const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID
+    console.log('💰 PayPal: Client ID:', paypalClientId ? 'Configured' : 'Missing')
 
     if (!paypalClientId || paypalClientId === 'YOUR_PAYPAL_CLIENT_ID_SANDBOX') {
       throw new Error('PayPal Client ID no configurado')
     }
 
+    console.log('💰 PayPal: Loading PayPal SDK...')
     const paypal = await loadScript({
       clientId: paypalClientId,
       currency: props.currency,
@@ -129,6 +132,7 @@ const initPayPal = async () => {
     if (!paypal || !paypal.Buttons) {
       throw new Error('PayPal SDK no se cargó correctamente')
     }
+    console.log('💰 PayPal: SDK loaded successfully')
 
     // Clear any existing buttons
     if (paypalButtonContainer.value) {
@@ -150,11 +154,15 @@ const initPayPal = async () => {
     })
 
     if (paypalButtonContainer.value) {
+      console.log('💰 PayPal: Rendering button...')
       await paypalInstance.value.render(paypalButtonContainer.value)
+      console.log('💰 PayPal: Button rendered successfully!')
+    } else {
+      console.warn('💰 PayPal: Container not found!')
     }
 
   } catch (err) {
-    console.error('Error initializing PayPal:', err)
+    console.error('💰 PayPal: Error initializing:', err)
     error.value = err.message
     emit('error', err.message)
   } finally {
@@ -164,9 +172,11 @@ const initPayPal = async () => {
 }
 
 onMounted(() => {
+  console.log('💰 PayPal: Component mounted. User ID:', auth.user?.id)
   if (auth.user?.id) {
     initPayPal()
   } else {
+    console.warn('💰 PayPal: User not authenticated')
     error.value = 'Usuario no autenticado'
   }
 })
