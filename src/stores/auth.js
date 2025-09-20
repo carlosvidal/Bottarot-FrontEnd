@@ -44,22 +44,37 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       console.log('🔄 Initializing auth...')
-      const { data: { session } } = await supabase.auth.getSession()
+
+      // Check localStorage for existing session first
+      const storedSession = localStorage.getItem('supabase.auth.token')
+      console.log('💾 Stored session in localStorage:', !!storedSession)
+
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('❌ Error getting session:', error)
+        // Clear potentially corrupted session
+        await supabase.auth.signOut()
+      }
+
       user.value = session?.user || null
-      console.log('🔑 Session loaded:', !!session?.user)
+      console.log('🔑 Session loaded:', !!session?.user, session?.user?.email)
 
       // If we have a user, check their profile and subscription
       if (session?.user) {
+        console.log('👤 Loading user profile and subscription...')
         await checkUserProfile(session.user)
         await loadUserSubscription()
+        console.log('✅ User data loaded successfully')
       }
 
       isInitialized.value = true
     } catch (error) {
-      console.error('Error getting session:', error)
+      console.error('❌ Error during auth initialization:', error)
+      // Mark as initialized even if there's an error to prevent infinite loops
+      isInitialized.value = true
     } finally {
       loading.value = false
-      console.log('✅ Auth initialization complete')
+      console.log('✅ Auth initialization complete, isInitialized:', isInitialized.value)
     }
   }
 
