@@ -124,9 +124,11 @@ const API_URL = import.meta.env.VITE_API_URL
 // Load subscription plans
 const loadPlans = async () => {
     try {
+        console.log('🛒 Checkout: Loading plans...')
         loadingPlans.value = true
         errorMessage.value = null
 
+        console.log('🛒 Checkout: API_URL:', API_URL)
         const response = await fetch(`${API_URL}/api/subscription-plans`)
 
         if (!response.ok) {
@@ -135,9 +137,10 @@ const loadPlans = async () => {
 
         const data = await response.json()
         plans.value = data.plans || []
+        console.log('🛒 Checkout: Plans loaded:', plans.value.length)
 
     } catch (error) {
-        console.error('Error loading plans:', error)
+        console.error('🛒 Checkout: Error loading plans:', error)
         errorMessage.value = 'No se pudieron cargar los planes disponibles'
     } finally {
         loadingPlans.value = false
@@ -146,6 +149,7 @@ const loadPlans = async () => {
 
 // Select a plan
 const selectPlan = (plan) => {
+    console.log('🛒 Checkout: Plan selected:', plan.name, plan.price)
     if (plan.price > 0) {
         selectedPlan.value = plan
         paymentError.value = null
@@ -192,6 +196,7 @@ const handlePaymentLoading = (loading) => {
 
 // Load plans on component mount
 onMounted(() => {
+    console.log('🛒 Checkout: Component mounted')
     loadPlans()
 })
 </script>
