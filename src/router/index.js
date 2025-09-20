@@ -128,9 +128,10 @@ const router = createRouter({
       path: '/logout',
       name: 'logout',
       beforeEnter: async (to, from, next) => {
-        const auth = useAuthStore();
-        await auth.logout();
-        next({ name: 'landing' });
+        // Simple hard reset - clear everything and reload
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/';
       }
     }
   ]
