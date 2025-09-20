@@ -33,7 +33,7 @@ onMounted(() => {
 
     if (initialQuestion && typeof initialQuestion === 'string') {
         handleQuestionSubmitted(initialQuestion);
-        router.replace({ query: {} });
+        router.replace({ name: 'chat', query: {} });
     }
 });
 </script>
