@@ -87,9 +87,25 @@ export const useAuthStore = defineStore('auth', () => {
       // If user just signed in and doesn't have profile data, they need to complete registration
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('👤 User signed in, checking profile...')
-        await checkUserProfile(session.user)
-        await loadUserSubscription()
-        console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
+        try {
+          // Run profile check and subscription loading in parallel with timeouts
+          const profilePromise = checkUserProfile(session.user)
+          const subscriptionPromise = loadUserSubscription()
+
+          // Wait for both with a reasonable timeout
+          await Promise.race([
+            Promise.all([profilePromise, subscriptionPromise]),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Profile loading timeout')), 15000)
+            )
+          ])
+
+          console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
+        } catch (error) {
+          console.error('⚠️ Profile loading timed out or failed:', error)
+          // Continue with defaults to not block auth initialization
+          needsRegistration.value = false
+        }
       }
 
       // Mark as initialized after any auth state change
@@ -111,6 +127,8 @@ export const useAuthStore = defineStore('auth', () => {
   // Check if user needs to complete profile
   const checkUserProfile = async (user) => {
     try {
+      console.log('🔍 Checking user profile for:', user.id)
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -118,18 +136,23 @@ export const useAuthStore = defineStore('auth', () => {
         .maybeSingle()
 
       if (error) {
-        console.error('Error checking user profile:', error)
+        console.error('❌ Error checking user profile:', error)
+        // Don't block initialization for profile errors
+        needsRegistration.value = false
         return
       }
 
       if (!profile) {
-        // Profile doesn't exist, user needs to complete registration
+        console.log('❌ Profile not found, user needs registration')
         needsRegistration.value = true
       } else {
+        console.log('✅ Profile found, user is fully registered')
         needsRegistration.value = false
       }
     } catch (error) {
-      console.error('Error checking user profile:', error)
+      console.error('❌ Exception checking user profile:', error)
+      // Default to no registration needed to prevent blocking
+      needsRegistration.value = false
     }
   }
 
@@ -268,20 +291,42 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Load user subscription info
   const loadUserSubscription = async () => {
-    if (!user.value?.id) return
+    if (!user.value?.id) {
+      console.log('⚠️ No user ID available for subscription loading')
+      return
+    }
 
     try {
+      console.log('💳 Loading user subscription for:', user.value.id)
       const API_URL = import.meta.env.VITE_API_URL
-      const response = await fetch(`${API_URL}/api/user/subscription/${user.value.id}`)
+
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+      const response = await fetch(`${API_URL}/api/user/subscription/${user.value.id}`, {
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
 
       if (response.ok) {
         const data = await response.json()
         userSubscription.value = data
+        console.log('✅ Subscription loaded successfully:', data.plan_name || 'Gratuito')
       } else {
-        console.error('Error loading subscription:', response.statusText)
+        console.error('❌ Error loading subscription:', response.status, response.statusText)
+        // Set default subscription to prevent blocking
+        userSubscription.value = { plan_name: 'Gratuito', has_active_subscription: false }
       }
     } catch (error) {
-      console.error('Error loading user subscription:', error)
+      if (error.name === 'AbortError') {
+        console.error('⏰ Subscription loading timed out after 10 seconds')
+      } else {
+        console.error('❌ Exception loading user subscription:', error)
+      }
+      // Set default subscription to prevent blocking
+      userSubscription.value = { plan_name: 'Gratuito', has_active_subscription: false }
     }
   }
 
