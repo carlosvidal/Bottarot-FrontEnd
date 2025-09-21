@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { tarotDeck } from '../data/tarotDeck.js';
+import { generatePersonalContext, getContextSummary } from '../utils/personalContext.js';
 
 const props = defineProps({
     readingData: {
@@ -33,16 +34,23 @@ const getTarotInterpretation = async () => {
     interpretation.value = '';
     interpretationError.value = '';
 
-    const promptData = {
-        pregunta: props.readingData.question,
-        cartas: selectedCards.value.map((card, index) => ({
-            nombre: card.name,
-            orientacion: card.upright ? 'Derecha' : 'Invertida',
-            posicion: cardTitles[index]
-        }))
-    };
-
     try {
+        // Obtener contexto personalizado del usuario
+        const personalContext = await generatePersonalContext();
+        const contextSummary = await getContextSummary();
+
+        console.log('🔮 Generando interpretación con contexto:', contextSummary);
+
+        const promptData = {
+            pregunta: props.readingData.question,
+            cartas: selectedCards.value.map((card, index) => ({
+                nombre: card.name,
+                orientacion: card.upright ? 'Derecha' : 'Invertida',
+                posicion: cardTitles[index]
+            })),
+            contextoPersonal: personalContext.context
+        };
+
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tarot`, {
             method: 'POST',
             headers: {
