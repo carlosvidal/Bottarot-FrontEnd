@@ -6,6 +6,7 @@ import Reading from '../components/Reading.vue';
 import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
 import { getPersonalizedGreeting } from '../utils/personalContext.js';
+import { useAuthStore } from '../stores/auth.js';
 
 // Generate UUID v4
 function generateUUID() {
@@ -18,6 +19,7 @@ function generateUUID() {
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const readings = ref([]);
 const chatHistory = ref(null);
@@ -153,6 +155,14 @@ watch(() => route.params.chatId, (newChatId, oldChatId) => {
             </ChatHeader>
 
             <main class="chat-container" ref="chatHistory">
+                <!-- Warmup message -->
+                <div v-if="authStore.warmupMessage" class="warmup-notification">
+                    <div class="warmup-content">
+                        <span class="warmup-icon">🔥</span>
+                        <span class="warmup-text">{{ authStore.warmupMessage }}</span>
+                    </div>
+                </div>
+
                 <div v-if="readings.length === 0" class="welcome-message">
                     <h2>{{ personalizedGreeting }}</h2>
                     <p>Formula tu pregunta en la parte de abajo para que el oráculo te muestre tu destino.</p>
@@ -199,6 +209,60 @@ watch(() => route.params.chatId, (newChatId, oldChatId) => {
     .sidebar-container { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); z-index: 999; }
     .sidebar-container.is-open { transform: translateX(0); }
     .overlay.is-open { display: block; }
+}
+
+/* Warmup notification */
+.warmup-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    animation: slideInDown 0.5s ease-out;
+}
+
+.warmup-content {
+    background: linear-gradient(135deg, #ff6b35, #ff8f00);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.warmup-icon {
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+}
+
+.warmup-text {
+    white-space: nowrap;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 /* Scrollbar styles */
