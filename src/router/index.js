@@ -85,11 +85,21 @@ const router = createRouter({
       component: Chat,
       beforeEnter: (to, from, next) => {
         const auth = useAuthStore();
+        console.log('🚪 Chat guard - Auth state:', {
+          isLoggedIn: auth.isLoggedIn,
+          needsRegistration: auth.needsRegistration,
+          isInitialized: auth.isInitialized,
+          user: !!auth.user
+        });
+
         if (!auth.isLoggedIn) {
+          console.log('❌ Chat guard - Not logged in, redirecting to landing');
           next({ name: 'landing' });
         } else if (auth.needsRegistration) {
+          console.log('❌ Chat guard - Needs registration, redirecting to landing');
           next({ name: 'landing' });
         } else {
+          console.log('✅ Chat guard - Access granted');
           next();
         }
       }
