@@ -5,6 +5,7 @@ import QuestionForm from '../components/QuestionForm.vue';
 import Reading from '../components/Reading.vue';
 import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
+import { getPersonalizedGreeting } from '../utils/personalContext.js';
 
 // Generate UUID v4
 function generateUUID() {
@@ -21,6 +22,7 @@ const router = useRouter();
 const readings = ref([]);
 const chatHistory = ref(null);
 const isSidebarOpen = ref(false);
+const personalizedGreeting = ref('Bienvenido');
 
 // Current chat ID - reactive
 const currentChatId = computed(() => route.params.chatId);
@@ -58,6 +60,18 @@ const shareChat = () => {
     // TODO: Implement sharing functionality with anonymous URLs
 };
 
+// Load personalized greeting
+const loadPersonalizedGreeting = async () => {
+    try {
+        const greeting = await getPersonalizedGreeting();
+        personalizedGreeting.value = greeting;
+        console.log('👋 Saludo personalizado cargado:', greeting);
+    } catch (error) {
+        console.warn('⚠️ No se pudo cargar saludo personalizado:', error);
+        personalizedGreeting.value = 'Bienvenido al oráculo';
+    }
+};
+
 const handleQuestionSubmitted = (question) => {
     // Ensure we have a chat ID
     const chatId = currentChatId.value || initializeChatId();
@@ -81,9 +95,12 @@ watch(readings, () => {
     });
 }, { deep: true });
 
-onMounted(() => {
+onMounted(async () => {
     // Initialize chat ID if needed
     const chatId = initializeChatId();
+
+    // Load personalized greeting
+    await loadPersonalizedGreeting();
 
     // Handle initial question from query parameter
     const initialQuestion = route.query.q;
@@ -137,7 +154,7 @@ watch(() => route.params.chatId, (newChatId, oldChatId) => {
 
             <main class="chat-container" ref="chatHistory">
                 <div v-if="readings.length === 0" class="welcome-message">
-                    <h2>Bienvenido</h2>
+                    <h2>{{ personalizedGreeting }}</h2>
                     <p>Formula tu pregunta en la parte de abajo para que el oráculo te muestre tu destino.</p>
                 </div>
                 <div v-else class="readings-list">
