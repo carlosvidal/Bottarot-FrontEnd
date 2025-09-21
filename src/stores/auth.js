@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '../lib/supabase.js'
+import { smartWarmup, updateServerActivity } from '../utils/serverWarmup.js'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -8,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const needsRegistration = ref(false)
   const userSubscription = ref(null)
   const isInitialized = ref(false)
+  const warmupMessage = ref('')
 
   const isLoggedIn = computed(() => !!user.value)
   const isFullyRegistered = computed(() => isLoggedIn.value && !needsRegistration.value)
@@ -78,6 +80,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Function to show warmup messages
+  const showWarmupMessage = (message) => {
+    warmupMessage.value = message
+    console.log('🔥 Warmup:', message)
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      warmupMessage.value = ''
+    }, 3000)
+  }
+
+  // Perform server warmup when user logs in
+  const performWarmup = async () => {
+    try {
+      const result = await smartWarmup(showWarmupMessage)
+      if (result.success && !result.skipped) {
+        console.log(`🔥 Servidor despierto (${result.latency}ms)`)
+      }
+    } catch (error) {
+      console.warn('⚠️ Warmup failed:', error)
+    }
+  }
+
   // Listen for auth changes
   const setupAuthListener = () => {
     supabase.auth.onAuthStateChange(async (event, session) => {
@@ -87,6 +111,10 @@ export const useAuthStore = defineStore('auth', () => {
       // If user just signed in and doesn't have profile data, they need to complete registration
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('👤 User signed in, checking profile...')
+
+        // Perform server warmup as soon as user logs in
+        performWarmup()
+
         try {
           // Run profile check and subscription loading in parallel with timeouts
           const profilePromise = checkUserProfile(session.user)
@@ -404,6 +432,7 @@ export const useAuthStore = defineStore('auth', () => {
     needsRegistration,
     loading,
     isInitialized,
+    warmupMessage,
     // Subscription properties
     userSubscription,
     isSubscriptionActive,
@@ -425,6 +454,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Subscription functions
     loadUserSubscription,
     checkCanAskQuestion,
-    recordQuestion
+    recordQuestion,
+    // Warmup functions
+    performWarmup,
+    showWarmupMessage
   }
 })
