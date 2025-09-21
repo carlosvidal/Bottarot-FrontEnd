@@ -1,23 +1,25 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.chat_messages (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+CREATE TABLE public.chats (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  session_id bigint,
-  question text,
-  cards jsonb,
-  interpretation text,
-  CONSTRAINT chat_messages_pkey PRIMARY KEY (id),
-  CONSTRAINT chat_messages_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.chat_sessions(id)
-);
-CREATE TABLE public.chat_sessions (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  created_at timestamp with time zone NOT NULL,
-  user_id uuid DEFAULT gen_random_uuid(),
   title text,
-  CONSTRAINT chat_sessions_pkey PRIMARY KEY (id),
-  CONSTRAINT chat_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+  CONSTRAINT chats_pkey PRIMARY KEY (id),
+  CONSTRAINT chats_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.messages (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  chat_id uuid NOT NULL,
+  user_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  role text NOT NULL CHECK (role = ANY (ARRAY['user'::text, 'assistant'::text])),
+  content text,
+  cards jsonb,
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id),
+  CONSTRAINT messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.payment_transactions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

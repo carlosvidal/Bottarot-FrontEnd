@@ -26,8 +26,8 @@ const conversationLog = ref([]);
 const chatContainer = ref(null);
 const isSidebarOpen = ref(false);
 const personalizedGreeting = ref('Bienvenido');
-const isLoading = ref(false);
-const isThinking = ref(false); // Used to disable form
+const isLoadingHistory = ref(false);
+const isThinking = ref(false);
 
 const cardTitles = ['Pasado', 'Presente', 'Futuro'];
 
@@ -43,6 +43,57 @@ const lastAIMessage = computed(() => {
     }
     return null;
 });
+
+// --- DATABASE INTERACTIONS ---
+const loadChatHistory = async (chatId) => {
+    if (!chatId) return;
+    isLoadingHistory.value = true;
+    conversationLog.value = [];
+    console.log(`📚 Cargando historial para el chat: ${chatId}`);
+    try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chats/${chatId}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const history = await response.json();
+
+        // Map DB messages to frontend conversationLog format
+        conversationLog.value = history.map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            cards: msg.cards ? msg.cards.map(card => ({ ...card, revealed: true, isFlipped: true })) : [],
+            isLoading: false
+        }));
+        console.log(`✅ Historial cargado: ${conversationLog.value.length} mensajes.`);
+    } catch (error) {
+        console.error('Error cargando el historial del chat:', error);
+    } finally {
+        isLoadingHistory.value = false;
+    }
+};
+
+const saveMessage = async (message) => {
+    try {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(message),
+        });
+    } catch (error) {
+        console.error('Error guardando el mensaje:', error);
+    }
+};
+
+const createChatInDB = async (chatId, userId, title) => {
+    try {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/chats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, userId, title }),
+        });
+    } catch (error) {
+        console.error('Error creando el chat:', error);
+    }
+};
 
 // --- LIFECYCLE & ROUTING ---
 const initializeChatId = () => {
@@ -63,18 +114,25 @@ const createNewChat = () => {
 onMounted(async () => {
     const chatId = initializeChatId();
     await loadPersonalizedGreeting();
+    
+    // Load history if a chat ID is present
+    if (chatId) {
+        await loadChatHistory(chatId);
+    }
 
-    const initialQuestion = route.query.q;
-    if (initialQuestion && typeof initialQuestion === 'string') {
-        handleQuestionSubmitted(initialQuestion);
-        router.replace({ name: 'chat', params: { chatId }, query: {} });
+    // Handle initial question from query parameter if no history was loaded
+    if (conversationLog.value.length === 0) {
+        const initialQuestion = route.query.q;
+        if (initialQuestion && typeof initialQuestion === 'string') {
+            handleQuestionSubmitted(initialQuestion);
+            router.replace({ name: 'chat', params: { chatId }, query: {} });
+        }
     }
 });
 
 watch(() => route.params.chatId, (newChatId, oldChatId) => {
-    if (newChatId !== oldChatId && newChatId) {
-        conversationLog.value = [];
-        // Here you would load chat history for newChatId if it was saved
+    if (newChatId && newChatId !== oldChatId) {
+        loadChatHistory(newChatId);
     }
 });
 
@@ -91,54 +149,30 @@ watch(conversationLog, () => {
 
 const drawCardsAnimation = async (existingCards = null) => {
     if (existingCards) {
-        // If using existing cards, just show them flipped
         return existingCards.map(card => ({ ...card, revealed: true, isFlipped: true }));
     }
 
-    // --- Animation for new cards ---
-    isThinking.value = true; // Disable form during animation
-    const placeholders = Array(3).fill(null).map((_, i) => ({
-        key: `p-${Date.now()}-${i}`,
-        revealed: false,
-        isFlipped: false,
-        image: ''
-    }));
+    isThinking.value = true;
+    const placeholders = Array(3).fill(null).map((_, i) => ({ key: `p-${Date.now()}-${i}`, revealed: false, isFlipped: false, image: '' }));
     
-    // Add a temporary AI message with placeholders to trigger rendering
-    conversationLog.value.push({
-        id: Date.now(),
-        role: 'assistant',
-        cards: placeholders,
-        content: '',
-        isLoading: true,
-    });
+    conversationLog.value.push({ id: Date.now(), role: 'assistant', cards: placeholders, content: '', isLoading: true });
 
     await nextTick();
 
-    // Reveal placeholders
     for (let i = 0; i < 3; i++) {
         await delay(200);
         const lastMsg = conversationLog.value[conversationLog.value.length - 1];
-        if (lastMsg && lastMsg.cards && lastMsg.cards[i]) {
-            lastMsg.cards[i].revealed = true;
-        }
+        if (lastMsg && lastMsg.cards && lastMsg.cards[i]) lastMsg.cards[i].revealed = true;
     }
     await delay(500);
 
-    // Flip to real cards
     const shuffledDeck = [...tarotDeck].sort(() => Math.random() - 0.5);
     const drawnCardsData = shuffledDeck.slice(0, 3);
     const finalCards = [];
 
     for (let i = 0; i < 3; i++) {
         await delay(400);
-        const realCard = {
-            ...drawnCardsData[i],
-            upright: Math.random() > 0.5,
-            revealed: true,
-            isFlipped: false, // Will be flipped in the next step
-            key: `card-${Date.now()}-${i}`
-        };
+        const realCard = { ...drawnCardsData[i], upright: Math.random() > 0.5, revealed: true, isFlipped: false, key: `card-${Date.now()}-${i}` };
         finalCards.push(realCard);
 
         const lastMsg = conversationLog.value[conversationLog.value.length - 1];
@@ -149,8 +183,8 @@ const drawCardsAnimation = async (existingCards = null) => {
         }
     }
     
-    await delay(1000); // Wait for flip animation to be appreciated
-    isThinking.value = false; // Re-enable form
+    await delay(1000);
+    isThinking.value = false;
     return finalCards;
 };
 
@@ -160,22 +194,11 @@ const getTarotInterpretation = async (question, cards) => {
 
     try {
         const personalContext = await generatePersonalContext();
-        
-        // Prepare history for the backend
-        const historyForAPI = conversationLog.value
-            .slice(0, -2) // Exclude current user question and the placeholder AI response
-            .map(msg => ({
-                role: msg.role,
-                content: msg.content
-            }));
+        const historyForAPI = conversationLog.value.slice(0, -2).map(msg => ({ role: msg.role, content: msg.content }));
 
         const promptData = {
             pregunta: question,
-            cartas: cards.map((card, index) => ({
-                nombre: card.name,
-                orientacion: card.upright ? 'Derecha' : 'Invertida',
-                posicion: cardTitles[index]
-            })),
+            cartas: cards.map((card, index) => ({ nombre: card.name, orientacion: card.upright ? 'Derecha' : 'Invertida', posicion: cardTitles[index] })),
             contextoPersonal: personalContext.context,
             history: historyForAPI
         };
@@ -187,14 +210,14 @@ const getTarotInterpretation = async (question, cards) => {
         });
 
         if (!response.ok) throw new Error('No se pudo obtener la interpretación.');
-
         const data = await response.json();
         
-        // Update the last AI message with the interpretation
         const finalMsg = conversationLog.value[conversationLog.value.length - 1];
         if (finalMsg) {
             finalMsg.content = data.interpretation;
             finalMsg.isLoading = false;
+            // Save assistant message to DB
+            saveMessage({ chatId: currentChatId.value, userId: authStore.user.id, role: 'assistant', content: finalMsg.content, cards: finalMsg.cards });
         }
 
     } catch (error) {
@@ -211,31 +234,35 @@ const handleQuestionSubmitted = async (question) => {
     if (isThinking.value) return;
     isThinking.value = true;
 
-    // 1. Add user question to log
-    conversationLog.value.push({
-        id: Date.now(),
+    const isFirstQuestionInChat = conversationLog.value.length === 0;
+
+    const userMessage = {
+        id: Date.now(), // Temporary ID, real one comes from DB
         role: 'user',
         content: question,
-    });
+        chatId: currentChatId.value,
+        userId: authStore.user.id
+    };
+    conversationLog.value.push(userMessage);
     await nextTick();
 
-    let cardsForInterpretation;
-    const isFirstQuestion = userMessages.value.length <= 1;
+    // If it's the first message, create the chat entry in the DB
+    if (isFirstQuestionInChat) {
+        await createChatInDB(currentChatId.value, authStore.user.id, question.substring(0, 50));
+    }
+    // Save user message to DB
+    await saveMessage(userMessage);
 
-    if (isFirstQuestion) {
-        // 2a. First question: always draw new cards
+    let cardsForInterpretation;
+    if (isFirstQuestionInChat) {
         cardsForInterpretation = await drawCardsAnimation();
     } else {
-        // 2b. Follow-up: check with backend
         try {
             const historyForCheck = conversationLog.value.map(msg => ({ role: msg.role, content: msg.content }));
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tarot/check`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    history: historyForCheck.slice(0, -1), // History before the current question
-                    current_question: question
-                }),
+                body: JSON.stringify({ history: historyForCheck.slice(0, -1), current_question: question }),
             });
             const { decision } = await response.json();
 
@@ -243,27 +270,18 @@ const handleQuestionSubmitted = async (question) => {
                 cardsForInterpretation = await drawCardsAnimation();
             } else { // follow_up
                 cardsForInterpretation = lastAIMessage.value.cards;
-                // Add AI placeholder message for follow-up
-                conversationLog.value.push({
-                    id: Date.now(),
-                    role: 'assistant',
-                    cards: cardsForInterpretation,
-                    content: '',
-                    isLoading: true,
-                });
+                const assistantMessage = { id: Date.now(), role: 'assistant', cards: cardsForInterpretation, content: '', isLoading: true };
+                conversationLog.value.push(assistantMessage);
             }
         } catch (error) {
             console.error('Error checking question type:', error);
-            // Fallback to new draw on error
             cardsForInterpretation = await drawCardsAnimation();
         }
     }
 
-    // 3. Get interpretation
     await getTarotInterpretation(question, cardsForInterpretation);
     isThinking.value = false;
 };
-
 
 // --- OTHER UI LOGIC ---
 const loadPersonalizedGreeting = async () => {
