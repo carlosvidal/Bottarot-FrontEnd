@@ -1,14 +1,20 @@
 <script setup>
 import { ref } from 'vue';
 
+const props = defineProps({
+    isDisabled: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const emit = defineEmits(['question-submitted']);
 
 const userQuestion = ref('');
 const maxQuestionLength = 500;
-const isDrawing = ref(false); // Local state to disable button during submission
 
 const submitQuestion = () => {
-    if (!userQuestion.value.trim()) return;
+    if (props.isDisabled || !userQuestion.value.trim()) return;
     emit('question-submitted', userQuestion.value);
     userQuestion.value = ''; // Clear input after submitting
 };
@@ -18,11 +24,12 @@ const submitQuestion = () => {
     <div class="question-form-container">
         <div class="question-container">
             <textarea v-model="userQuestion" class="question-input" :maxlength="maxQuestionLength"
-                placeholder="Escribe tu pregunta aquí..." @keyup.enter.exact="submitQuestion"></textarea>
+                placeholder="Escribe tu pregunta aquí..." @keyup.enter.exact="submitQuestion" :disabled="isDisabled"></textarea>
             <p class="char-counter">{{ userQuestion.length }} / {{ maxQuestionLength }}</p>
         </div>
-        <button class="draw-button" @click="submitQuestion" :disabled="isDrawing || !userQuestion.trim()">
-            Realizar Tirada
+        <button class="draw-button" @click="submitQuestion" :disabled="isDisabled || !userQuestion.trim()">
+            <span v-if="isDisabled">Pensando...</span>
+            <span v-else>Realizar Tirada</span>
         </button>
     </div>
 </template>
