@@ -41,13 +41,12 @@ const router = createRouter({
       beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
 
-        // Wait for auth to initialize if it hasn't already
-        if (auth.loading) {
-          const maxWait = 3000; // 3 seconds max
-          const startTime = Date.now();
-
-          while (auth.loading && (Date.now() - startTime) < maxWait) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for auth initialization if not ready
+        if (!auth.isInitialized) {
+          const authReady = await waitForAuthInitialization();
+          if (!authReady) {
+            next({ name: 'landing' });
+            return;
           }
         }
 
@@ -83,9 +82,28 @@ const router = createRouter({
       path: '/chat',
       name: 'chat',
       component: Chat,
-      beforeEnter: (to, from, next) => {
+      beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
-        console.log('🚪 Chat guard - Auth state:', {
+        console.log('🚪 Chat guard - Initial auth state:', {
+          isLoggedIn: auth.isLoggedIn,
+          needsRegistration: auth.needsRegistration,
+          isInitialized: auth.isInitialized,
+          user: !!auth.user
+        });
+
+        // Wait for auth initialization if not ready
+        if (!auth.isInitialized) {
+          console.log('⏳ Chat guard - Waiting for auth initialization...');
+          const authReady = await waitForAuthInitialization();
+
+          if (!authReady) {
+            console.log('⚠️ Chat guard - Auth failed to initialize, redirecting to landing');
+            next({ name: 'landing' });
+            return;
+          }
+        }
+
+        console.log('🚪 Chat guard - Final auth state:', {
           isLoggedIn: auth.isLoggedIn,
           needsRegistration: auth.needsRegistration,
           isInitialized: auth.isInitialized,
@@ -123,8 +141,18 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: Profile,
-      beforeEnter: (to, from, next) => {
+      beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
+
+        // Wait for auth initialization if not ready
+        if (!auth.isInitialized) {
+          const authReady = await waitForAuthInitialization();
+          if (!authReady) {
+            next({ name: 'landing' });
+            return;
+          }
+        }
+
         if (!auth.isLoggedIn || auth.needsRegistration) {
           next({ name: 'landing' });
         } else {
@@ -136,8 +164,18 @@ const router = createRouter({
       path: '/checkout',
       name: 'checkout',
       component: Checkout,
-      beforeEnter: (to, from, next) => {
+      beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
+
+        // Wait for auth initialization if not ready
+        if (!auth.isInitialized) {
+          const authReady = await waitForAuthInitialization();
+          if (!authReady) {
+            next({ name: 'landing' });
+            return;
+          }
+        }
+
         if (auth.isLoggedIn) {
           next();
         } else {
