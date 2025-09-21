@@ -58,7 +58,13 @@ const router = createRouter({
 
         if (auth.isLoggedIn && auth.isFullyRegistered) {
           console.log('🚀 Redirecting to chat from home guard');
-          next({ name: 'chat' });
+          // Generate UUID for new chat session
+          const chatId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+          next({ name: 'chat', params: { chatId } });
         } else {
           console.log('🏡 Redirecting to landing from home guard');
           next({ name: 'landing' });
@@ -79,7 +85,7 @@ const router = createRouter({
       }
     },
     {
-      path: '/chat',
+      path: '/chat/:chatId?',
       name: 'chat',
       component: Chat,
       beforeEnter: async (to, from, next) => {
@@ -192,6 +198,12 @@ const router = createRouter({
       path: '/debug',
       name: 'debug',
       component: Debug
+    },
+    {
+      path: '/shared/:shareId',
+      name: 'shared-chat',
+      component: () => import('../views/SharedChat.vue'),
+      // No auth guard - anonymous access
     },
     {
       path: '/logout',

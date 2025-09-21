@@ -4,17 +4,15 @@
             <slot name="menu-button"></slot>
         </div>
         <div class="header-right">
-            <button class="header-action">Nuevo</button>
-            <button class="header-action">Añadir a favoritos</button>
-            <button class="header-action">Compartir</button>
-
+            <button @click="$emit('new-chat')" class="header-action">Nuevo</button>
+            <button @click="$emit('add-to-favorites')" class="header-action">Añadir a favoritos</button>
+            <button @click="$emit('share-chat')" class="header-action">Compartir</button>
         </div>
-
     </header>
 </template>
 
 <script setup>
-// No logic needed yet for the actions
+defineEmits(['new-chat', 'add-to-favorites', 'share-chat']);
 </script>
 
 <style scoped>

@@ -6,6 +6,10 @@ const props = defineProps({
     readingData: {
         type: Object,
         required: true
+    },
+    isShared: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -105,7 +109,19 @@ const drawCards = async () => {
 };
 
 onMounted(() => {
-    drawCards();
+    if (props.isShared && props.readingData.cards && props.readingData.response) {
+        // For shared readings, load the saved data
+        selectedCards.value = props.readingData.cards.map((card, index) => ({
+            ...card,
+            revealed: true,
+            isFlipped: true,
+            key: `shared-${Date.now()}-${index}`
+        }));
+        interpretation.value = props.readingData.response;
+    } else {
+        // For new readings, draw cards
+        drawCards();
+    }
 });
 
 </script>

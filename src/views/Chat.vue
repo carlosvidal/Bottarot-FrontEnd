@@ -1,20 +1,75 @@
 <script setup>
-import { ref, nextTick, watch, onMounted } from 'vue';
+import { ref, nextTick, watch, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import QuestionForm from '../components/QuestionForm.vue';
 import Reading from '../components/Reading.vue';
 import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
 
+// Generate UUID v4
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+const route = useRoute();
+const router = useRouter();
+
 const readings = ref([]);
 const chatHistory = ref(null);
 const isSidebarOpen = ref(false);
 
+// Current chat ID - reactive
+const currentChatId = computed(() => route.params.chatId);
+
+// Initialize chat ID if not present
+const initializeChatId = () => {
+    if (!currentChatId.value) {
+        const newChatId = generateUUID();
+        console.log('💬 Creating new chat:', newChatId);
+        router.replace({ name: 'chat', params: { chatId: newChatId } });
+        return newChatId;
+    }
+    console.log('💬 Loading existing chat:', currentChatId.value);
+    return currentChatId.value;
+};
+
+// Create new chat (for "Nuevo" button)
+const createNewChat = () => {
+    const newChatId = generateUUID();
+    console.log('💬 Creating new chat via button:', newChatId);
+    // Clear current readings and navigate to new chat
+    readings.value = [];
+    router.push({ name: 'chat', params: { chatId: newChatId } });
+};
+
+// Add to favorites (placeholder for future implementation)
+const addToFavorites = () => {
+    console.log('⭐ Add to favorites functionality - coming soon!');
+    // TODO: Implement favorites functionality
+};
+
+// Share chat (placeholder for future implementation)
+const shareChat = () => {
+    console.log('🔗 Share chat functionality - coming soon!');
+    // TODO: Implement sharing functionality with anonymous URLs
+};
+
 const handleQuestionSubmitted = (question) => {
+    // Ensure we have a chat ID
+    const chatId = currentChatId.value || initializeChatId();
+
     const newReading = {
         id: Date.now(),
-        question: question
+        question: question,
+        chatId: chatId,
+        timestamp: new Date().toISOString()
     };
+
+    console.log('💬 Adding question to chat:', chatId, question);
     readings.value.push(newReading);
 };
 
@@ -27,13 +82,35 @@ watch(readings, () => {
 }, { deep: true });
 
 onMounted(() => {
-    const route = useRoute();
-    const router = useRouter();
-    const initialQuestion = route.query.q;
+    // Initialize chat ID if needed
+    const chatId = initializeChatId();
 
+    // Handle initial question from query parameter
+    const initialQuestion = route.query.q;
     if (initialQuestion && typeof initialQuestion === 'string') {
         handleQuestionSubmitted(initialQuestion);
-        router.replace({ name: 'chat', query: {} });
+        // Clean up query parameter but keep chat ID
+        router.replace({
+            name: 'chat',
+            params: { chatId: chatId },
+            query: {}
+        });
+    }
+
+    // In the future, this is where we'll load chat history from backend
+    // if (chatId) {
+    //     loadChatHistory(chatId);
+    // }
+});
+
+// Watch for chat ID changes (when navigating between chats)
+watch(() => route.params.chatId, (newChatId, oldChatId) => {
+    if (newChatId !== oldChatId && newChatId) {
+        console.log('💬 Chat changed from', oldChatId, 'to', newChatId);
+        // Clear current readings when switching chats
+        readings.value = [];
+        // In the future, load the new chat's history
+        // loadChatHistory(newChatId);
     }
 });
 </script>
@@ -45,7 +122,10 @@ onMounted(() => {
         </div>
 
         <div class="main-content">
-            <ChatHeader>
+            <ChatHeader
+                @new-chat="createNewChat"
+                @add-to-favorites="addToFavorites"
+                @share-chat="shareChat">
                 <template #menu-button>
                     <button @click="isSidebarOpen = !isSidebarOpen" class="menu-button">
                         <span></span>
