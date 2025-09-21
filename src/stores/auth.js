@@ -101,6 +101,12 @@ export const useAuthStore = defineStore('auth', () => {
           ])
 
           console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
+          console.log('🔍 Auth state after profile check:', {
+            isLoggedIn: isLoggedIn.value,
+            isFullyRegistered: isFullyRegistered.value,
+            needsRegistration: needsRegistration.value,
+            user: !!user.value
+          })
         } catch (error) {
           console.error('⚠️ Profile loading timed out or failed:', error)
           // Continue with defaults to not block auth initialization
