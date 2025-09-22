@@ -124,7 +124,7 @@ const createNewChat = () => {
 };
 
 onMounted(async () => {
-    await loadPersonalizedGreeting();
+    // await loadPersonalizedGreeting();
     const authReady = await waitForAuthInitialization(authStore);
 
     if (authReady) {
