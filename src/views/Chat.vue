@@ -123,35 +123,40 @@ const createNewChat = () => {
     router.push({ name: 'chat', params: { chatId: newChatId } });
 };
 
-onMounted(async () => {
-    // await loadPersonalizedGreeting();
-    const authReady = await waitForAuthInitialization(authStore);
+onMounted(() => {
+    loadPersonalizedGreeting(); // Fire-and-forget
 
-    if (authReady) {
-        const chatId = initializeChatId();
-        // if (chatId) {
-        //     await loadChatHistory(chatId);
-        // }
-
-        if (conversationLog.value.length === 0) {
-            const initialQuestion = route.query.q;
-            if (initialQuestion && typeof initialQuestion === 'string') {
-                handleQuestionSubmitted(initialQuestion);
-                router.replace({ name: 'chat', params: { chatId }, query: {} });
+    waitForAuthInitialization(authStore).then(authReady => {
+        if (authReady) {
+            const chatId = initializeChatId();
+            if (chatId) {
+                loadChatHistory(chatId); // Fire-and-forget
             }
+
+            // This part remains synchronous and depends on the immediate state
+            if (conversationLog.value.length === 0) {
+                const initialQuestion = route.query.q;
+                if (initialQuestion && typeof initialQuestion === 'string') {
+                    handleQuestionSubmitted(initialQuestion);
+                    router.replace({ name: 'chat', params: { chatId }, query: {} });
+                }
+            }
+        } else {
+            console.error("Auth no se inicializó a tiempo en Chat.vue");
+            // Optionally, redirect or show an error message
+            // router.push({ name: 'landing' });
         }
-    } else {
-        console.error("Auth no se inicializó a tiempo en Chat.vue");
-    }
+    });
 });
 
-watch(() => route.params.chatId, async (newChatId, oldChatId) => {
-    // if (newChatId && newChatId !== oldChatId) {
-    //     const authReady = await waitForAuthInitialization(authStore);
-    //     if(authReady) {
-    //         loadChatHistory(newChatId);
-    //     }
-    // }
+watch(() => route.params.chatId, (newChatId, oldChatId) => {
+    if (newChatId && newChatId !== oldChatId) {
+        waitForAuthInitialization(authStore).then(authReady => {
+            if(authReady) {
+                loadChatHistory(newChatId);
+            }
+        });
+    }
 });
 
 watch(conversationLog, () => {
