@@ -129,9 +129,9 @@ onMounted(async () => {
 
     if (authReady) {
         const chatId = initializeChatId();
-        if (chatId) {
-            await loadChatHistory(chatId);
-        }
+        // if (chatId) {
+        //     await loadChatHistory(chatId);
+        // }
 
         if (conversationLog.value.length === 0) {
             const initialQuestion = route.query.q;
@@ -146,12 +146,12 @@ onMounted(async () => {
 });
 
 watch(() => route.params.chatId, async (newChatId, oldChatId) => {
-    if (newChatId && newChatId !== oldChatId) {
-        const authReady = await waitForAuthInitialization(authStore);
-        if(authReady) {
-            loadChatHistory(newChatId);
-        }
-    }
+    // if (newChatId && newChatId !== oldChatId) {
+    //     const authReady = await waitForAuthInitialization(authStore);
+    //     if(authReady) {
+    //         loadChatHistory(newChatId);
+    //     }
+    // }
 });
 
 watch(conversationLog, () => {
