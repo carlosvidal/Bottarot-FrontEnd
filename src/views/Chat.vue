@@ -214,8 +214,6 @@ const getTarotInterpretation = async (question, cards) => {
         const personalContext = await generatePersonalContext();
         const historyForAPI = conversationLog.value.slice(0, -2).map(msg => ({ role: msg.role, content: msg.content }));
 
-        console.log("🕵️‍♂️ DEBUG: Enviando al endpoint /api/tarot con el siguiente historial:", JSON.parse(JSON.stringify(historyForAPI)));
-
         const promptData = {
             pregunta: question,
             cartas: cards.map((card, index) => ({ nombre: card.name, orientacion: card.upright ? 'Derecha' : 'Invertida', posicion: cardTitles[index] })),
@@ -253,7 +251,6 @@ const handleQuestionSubmitted = async (question) => {
     if (isThinking.value || !authStore.isLoggedIn) return;
     isThinking.value = true;
 
-    console.log("🕵️‍♂️ DEBUG: Inicio de handleQuestionSubmitted. Log actual:", JSON.parse(JSON.stringify(conversationLog.value)));
     const isFirstQuestionInChat = conversationLog.value.length === 0;
 
     const userMessage = {
@@ -273,13 +270,11 @@ const handleQuestionSubmitted = async (question) => {
 
     let cardsForInterpretation;
     if (isFirstQuestionInChat) {
-        console.log("🕵️‍♂️ DEBUG: Es la primera pregunta. Se tirarán nuevas cartas.");
         cardsForInterpretation = await drawCardsAnimation();
     } else {
         try {
             const historyForCheck = conversationLog.value.map(msg => ({ role: msg.role, content: msg.content }));
             const payloadForCheck = { history: historyForCheck.slice(0, -1), current_question: question };
-            console.log("🕵️‍♂️ DEBUG: Enviando al endpoint /api/tarot/check con el siguiente payload:", JSON.parse(JSON.stringify(payloadForCheck)));
 
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tarot/check`, {
                 method: 'POST',
@@ -287,13 +282,10 @@ const handleQuestionSubmitted = async (question) => {
                 body: JSON.stringify(payloadForCheck),
             });
             const { decision } = await response.json();
-            console.log(`🕵️‍♂️ DEBUG: Decisión recibida: ${decision}`);
 
             if (decision === 'new_draw') {
-                console.log("🕵️‍♂️ DEBUG: La decisión es new_draw. Se tirarán nuevas cartas.");
                 cardsForInterpretation = await drawCardsAnimation();
             } else { // follow_up
-                console.log("🕵️‍♂️ DEBUG: La decisión es follow_up. Se usarán las cartas anteriores.");
                 cardsForInterpretation = lastAIMessage.value.cards;
                 const assistantMessage = { id: Date.now(), role: 'assistant', cards: cardsForInterpretation, content: '', isLoading: true };
                 conversationLog.value.push(assistantMessage);
