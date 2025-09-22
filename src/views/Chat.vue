@@ -17,6 +17,17 @@ const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/
 });
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Helper function to wait for auth initialization (copied from router)
+async function waitForAuthInitialization(auth) {
+  if (auth.isInitialized) return true;
+  const maxWait = 8000; // 8 seconds max wait
+  const startTime = Date.now();
+  while (!auth.isInitialized && (Date.now() - startTime) < maxWait) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  return auth.isInitialized;
+}
+
 // --- STATE ---
 const route = useRoute();
 const router = useRouter();
@@ -46,7 +57,7 @@ const lastAIMessage = computed(() => {
 
 // --- DATABASE INTERACTIONS ---
 const loadChatHistory = async (chatId) => {
-    if (!chatId) return;
+    if (!chatId || !authStore.isLoggedIn) return;
     isLoadingHistory.value = true;
     conversationLog.value = [];
     console.log(`📚 Cargando historial para el chat: ${chatId}`);
@@ -55,7 +66,6 @@ const loadChatHistory = async (chatId) => {
         if (!response.ok) throw new Error('Network response was not ok');
         const history = await response.json();
 
-        // Map DB messages to frontend conversationLog format
         conversationLog.value = history.map(msg => ({
             id: msg.id,
             role: msg.role,
@@ -72,6 +82,7 @@ const loadChatHistory = async (chatId) => {
 };
 
 const saveMessage = async (message) => {
+    if (!authStore.isLoggedIn) return;
     try {
         await fetch(`${import.meta.env.VITE_API_URL}/api/messages`, {
             method: 'POST',
@@ -84,6 +95,7 @@ const saveMessage = async (message) => {
 };
 
 const createChatInDB = async (chatId, userId, title) => {
+    if (!authStore.isLoggedIn) return;
     try {
         await fetch(`${import.meta.env.VITE_API_URL}/api/chats`, {
             method: 'POST',
@@ -112,27 +124,33 @@ const createNewChat = () => {
 };
 
 onMounted(async () => {
-    const chatId = initializeChatId();
     await loadPersonalizedGreeting();
-    
-    // Load history if a chat ID is present
-    if (chatId) {
-        await loadChatHistory(chatId);
-    }
+    const authReady = await waitForAuthInitialization(authStore);
 
-    // Handle initial question from query parameter if no history was loaded
-    if (conversationLog.value.length === 0) {
-        const initialQuestion = route.query.q;
-        if (initialQuestion && typeof initialQuestion === 'string') {
-            handleQuestionSubmitted(initialQuestion);
-            router.replace({ name: 'chat', params: { chatId }, query: {} });
+    if (authReady) {
+        const chatId = initializeChatId();
+        if (chatId) {
+            await loadChatHistory(chatId);
         }
+
+        if (conversationLog.value.length === 0) {
+            const initialQuestion = route.query.q;
+            if (initialQuestion && typeof initialQuestion === 'string') {
+                handleQuestionSubmitted(initialQuestion);
+                router.replace({ name: 'chat', params: { chatId }, query: {} });
+            }
+        }
+    } else {
+        console.error("Auth no se inicializó a tiempo en Chat.vue");
     }
 });
 
-watch(() => route.params.chatId, (newChatId, oldChatId) => {
+watch(() => route.params.chatId, async (newChatId, oldChatId) => {
     if (newChatId && newChatId !== oldChatId) {
-        loadChatHistory(newChatId);
+        const authReady = await waitForAuthInitialization(authStore);
+        if(authReady) {
+            loadChatHistory(newChatId);
+        }
     }
 });
 
@@ -218,7 +236,6 @@ const getTarotInterpretation = async (question, cards) => {
         if (finalMsg) {
             finalMsg.content = data.interpretation;
             finalMsg.isLoading = false;
-            // Save assistant message to DB
             saveMessage({ chatId: currentChatId.value, userId: authStore.user.id, role: 'assistant', content: finalMsg.content, cards: finalMsg.cards });
         }
 
@@ -233,14 +250,14 @@ const getTarotInterpretation = async (question, cards) => {
 };
 
 const handleQuestionSubmitted = async (question) => {
-    if (isThinking.value) return;
+    if (isThinking.value || !authStore.isLoggedIn) return;
     isThinking.value = true;
 
     console.log("🕵️‍♂️ DEBUG: Inicio de handleQuestionSubmitted. Log actual:", JSON.parse(JSON.stringify(conversationLog.value)));
     const isFirstQuestionInChat = conversationLog.value.length === 0;
 
     const userMessage = {
-        id: Date.now(), // Temporary ID, real one comes from DB
+        id: Date.now(),
         role: 'user',
         content: question,
         chatId: currentChatId.value,
