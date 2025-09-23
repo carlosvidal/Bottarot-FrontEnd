@@ -1,0 +1,34 @@
+CREATE OR REPLACE FUNCTION public.get_chat_history(
+    p_chat_id uuid,
+    p_user_id uuid
+)
+RETURNS TABLE (
+    id uuid,
+    content text,
+    role text,
+    created_at timestamp with time zone
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- First, verify that the chat belongs to the user
+    IF NOT EXISTS (SELECT 1 FROM public.chats WHERE id = p_chat_id AND user_id = p_user_id) THEN
+        -- If the chat does not belong to the user, return an empty set
+        RETURN;
+    END IF;
+
+    -- Return the messages for the given chat, ordered by creation time
+    RETURN QUERY
+    SELECT
+        m.id,
+        m.content,
+        m.role,
+        m.created_at
+    FROM
+        public.messages m -- Assuming 'messages' is the table name for chat messages
+    WHERE
+        m.chat_id = p_chat_id
+    ORDER BY
+        m.created_at ASC;
+END;
+$$;

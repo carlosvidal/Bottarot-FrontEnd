@@ -1,4 +1,5 @@
 <script setup>
+import ChatMessage from '../components/ChatMessage.vue';
 import { ref, nextTick, watch, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import QuestionForm from '../components/QuestionForm.vue';
@@ -21,8 +22,48 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
+import { supabase } from '../lib/supabase.js';
+
 const readings = ref([]);
 const chatHistory = ref(null);
+const isLoadingHistory = ref(false);
+
+// New function to load chat history
+const loadChatHistory = async (chatId) => {
+    if (!chatId || !authStore.user?.id) {
+        console.warn('⚠️ Cannot load chat history: Missing chatId or user ID.');
+        readings.value = []; // Clear readings if no valid chat/user
+        return;
+    }
+
+    isLoadingHistory.value = true;
+    readings.value = []; // Clear current readings before loading new ones
+
+    try {
+        console.log(`💬 Loading chat history for chat ID: ${chatId} and user ID: ${authStore.user.id}`);
+        const { data, error } = await supabase.rpc('get_chat_history', {
+            p_chat_id: chatId,
+            p_user_id: authStore.user.id
+        });
+
+        if (error) {
+            console.error('❌ Error fetching chat history:', error);
+            // Optionally, display an error message to the user
+        } else {
+            console.log('✅ Chat history loaded:', data);
+            readings.value = data.map(msg => ({
+                id: msg.id,
+                content: msg.content,
+                role: msg.role,
+                timestamp: msg.created_at,
+            }));
+        }
+    } catch (err) {
+        console.error('❌ Exception while loading chat history:', err);
+    } finally {
+        isLoadingHistory.value = false;
+    }
+};
 const isSidebarOpen = ref(false);
 const personalizedGreeting = ref('Bienvenido');
 
@@ -74,21 +115,121 @@ const loadPersonalizedGreeting = async () => {
     }
 };
 
-const handleQuestionSubmitted = (question) => {
-    // Ensure we have a chat ID
-    const chatId = currentChatId.value || initializeChatId();
+const callAIService = async (chatId, question, userId) => {
+    console.log(`🤖 Calling AI service for chat ${chatId}, user ${userId} with question: ${question}`);
+    const API_URL = import.meta.env.VITE_API_URL;
 
-    const newReading = {
-        id: Date.now(),
-        question: question,
+    try {
+        const response = await fetch(`${API_URL}/api/chat/generate-ai-response`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chatId: chatId,
+                userId: userId,
+                question: question,
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`AI service error: ${response.status} - ${errorData.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.content || data.response;
+
+    } catch (error) {
+        console.error('❌ Error calling AI service:', error);
+        throw error;
+    }
+};
+
+const handleQuestionSubmitted = async (question) => {
+    const chatId = currentChatId.value || initializeChatId();
+    const userId = authStore.user?.id;
+
+    if (!userId) {
+        console.error('❌ User not logged in. Cannot submit question.');
+        return;
+    }
+
+    const userMessage = {
+        id: generateUUID(),
+        content: question,
+        role: 'user',
         chatId: chatId,
         timestamp: new Date().toISOString()
     };
 
-    console.log('💬 Adding question to chat:', chatId, question);
-    readings.value.push(newReading);
-};
+    console.log('💬 Adding user question to chat:', chatId, question);
+    readings.value.push(userMessage);
 
+    const tempAiMessage = {
+        id: generateUUID(),
+        content: "El oráculo está meditando sobre tu destino...",
+        role: 'assistant',
+        chatId: chatId,
+        timestamp: new Date().toISOString()
+    };
+    readings.value.push(tempAiMessage);
+    nextTick(() => {
+        if (chatHistory.value) {
+            chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
+        }
+    });
+
+
+    try {
+        const { data: userMessageId, error: userMessageError } = await supabase.rpc('save_message', {
+            p_chat_id: chatId,
+            p_user_id: userId,
+            p_content: userMessage.content,
+            p_role: userMessage.role
+        });
+
+        if (userMessageError) {
+            console.error('❌ Error saving user message:', userMessageError);
+            readings.value = readings.value.filter(msg => msg.id !== userMessage.id && msg.id !== tempAiMessage.id);
+            return;
+        }
+        userMessage.id = userMessageId;
+
+        const aiResponseContent = await callAIService(chatId, question, userId);
+
+        const index = readings.value.findIndex(msg => msg.id === tempAiMessage.id);
+        if (index !== -1) {
+            readings.value[index].content = aiResponseContent;
+            readings.value[index].timestamp = new Date().toISOString();
+        }
+
+        const { data: aiMessageId, error: aiMessageError } = await supabase.rpc('save_message', {
+            p_chat_id: chatId,
+            p_user_id: userId,
+            p_content: aiResponseContent,
+            p_role: 'assistant'
+        });
+
+        if (aiMessageError) {
+            console.error('❌ Error saving AI message:', aiMessageError);
+        } else {
+            if (index !== -1) {
+                readings.value[index].id = aiMessageId;
+            }
+        }
+
+    } catch (error) {
+        console.error('❌ Exception during question submission:', error);
+        readings.value = readings.value.filter(msg => msg.id !== tempAiMessage.id);
+    } finally {
+        nextTick(() => {
+            if (chatHistory.value) {
+                chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
+            }
+        });
+    }
+};
 watch(readings, () => {
     nextTick(() => {
         if (chatHistory.value) {
@@ -116,10 +257,8 @@ onMounted(async () => {
         });
     }
 
-    // In the future, this is where we'll load chat history from backend
-    // if (chatId) {
-    //     loadChatHistory(chatId);
-    // }
+    // Load chat history on mount
+    await loadChatHistory(chatId);
 });
 
 // Watch for chat ID changes (when navigating between chats)
@@ -128,8 +267,8 @@ watch(() => route.params.chatId, (newChatId, oldChatId) => {
         console.log('💬 Chat changed from', oldChatId, 'to', newChatId);
         // Clear current readings when switching chats
         readings.value = [];
-        // In the future, load the new chat's history
-        // loadChatHistory(newChatId);
+        // Load the new chat's history
+        await loadChatHistory(newChatId);
     }
 });
 </script>
@@ -163,12 +302,13 @@ watch(() => route.params.chatId, (newChatId, oldChatId) => {
                     </div>
                 </div>
 
-                <div v-if="readings.length === 0" class="welcome-message">
+                <div v-if="isLoadingHistory" class="loading-message">Cargando historial...</div>
+                <div v-else-if="readings.length === 0" class="welcome-message">
                     <h2>{{ personalizedGreeting }}</h2>
                     <p>Formula tu pregunta en la parte de abajo para que el oráculo te muestre tu destino.</p>
                 </div>
                 <div v-else class="readings-list">
-                    <Reading v-for="reading in readings" :key="reading.id" :reading-data="reading" />
+                    <ChatMessage v-for="message in readings" :key="message.id" :message="message" />
                 </div>
             </main>
 
