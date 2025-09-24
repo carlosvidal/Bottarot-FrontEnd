@@ -143,6 +143,7 @@ const loadPersonalizedGreeting = async () => {
     }
 };
 
+const ensureChatExists = async (chatId, userId) => {
     const API_URL = import.meta.env.VITE_API_URL;
     console.log('DEBUG: API_URL en ensureChatExists:', API_URL);
     try {
