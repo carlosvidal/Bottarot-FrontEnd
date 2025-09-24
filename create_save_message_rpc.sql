@@ -4,12 +4,11 @@ CREATE OR REPLACE FUNCTION public.save_message(
     p_content text,
     p_role text
 )
-RETURNS uuid
+RETURNS bigint
 LANGUAGE plpgsql
-AS $$
+AS $BODY$
 DECLARE
-    new_message_id uuid;
-BEGIN
+    new_message_id bigint;BEGIN
     -- First, verify that the chat belongs to the user
     IF NOT EXISTS (SELECT 1 FROM public.chats WHERE id = p_chat_id AND user_id = p_user_id) THEN
         RAISE EXCEPTION 'Chat with ID % does not belong to user %.', p_chat_id, p_user_id;
@@ -21,4 +20,4 @@ BEGIN
 
     RETURN new_message_id;
 END;
-$$;
+$BODY$;

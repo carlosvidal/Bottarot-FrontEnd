@@ -266,7 +266,7 @@ const handleQuestionSubmitted = async (question) => {
             readings.value = readings.value.filter(item => item.id !== userMessage.id && item.id !== tarotReading.id);
             return;
         }
-        userMessage.id = userMessageId;
+        // userMessage.id = userMessageId; // Removed this line
 
         // Prepare history for AI context (only actual messages, not the tarotReading object itself)
         const historyForAI = readings.value
