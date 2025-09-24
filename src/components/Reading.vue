@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { marked } from 'marked'; // Import marked
 
 const props = defineProps({
     cards: {
@@ -21,7 +22,7 @@ const cardTitles = ['Pasado', 'Presente', 'Futuro'];
 
 const formattedInterpretation = computed(() => {
     if (!props.interpretation) return '';
-    return props.interpretation.replace(/\n/g, '<br>');
+    return marked.parse(props.interpretation); // Use marked.parse for Markdown
 });
 
 </script>
