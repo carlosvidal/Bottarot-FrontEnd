@@ -253,6 +253,7 @@ const handleQuestionSubmitted = async (question) => {
 
     try {
         // Save user message to DB
+        console.log('DEBUG: Saving user message. ChatId:', chatId, 'UserId:', userId);
         const { data: userMessageId, error: userMessageError } = await supabase.rpc('save_message', {
             p_chat_id: chatId,
             p_user_id: userId,
@@ -285,6 +286,7 @@ const handleQuestionSubmitted = async (question) => {
         }
 
         // 6. Save AI interpretation to DB (as an assistant message)
+        console.log('DEBUG: Saving AI interpretation. ChatId:', chatId, 'UserId:', userId);
         const { data: aiMessageId, error: aiMessageError } = await supabase.rpc('save_message', {
             p_chat_id: chatId,
             p_user_id: userId,
