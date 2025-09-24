@@ -3,13 +3,13 @@ CREATE OR REPLACE FUNCTION public.get_chat_history(
     p_user_id uuid
 )
 RETURNS TABLE (
-    id uuid,
+    message_id uuid,
     content text,
     role text,
     created_at timestamp with time zone
 )
 LANGUAGE plpgsql
-AS $$
+AS $BODY$
 BEGIN
     -- First, verify that the chat belongs to the user
     IF NOT EXISTS (SELECT 1 FROM public.chats WHERE id = p_chat_id AND user_id = p_user_id) THEN
@@ -20,7 +20,7 @@ BEGIN
     -- Return the messages for the given chat, ordered by creation time
     RETURN QUERY
     SELECT
-        m.id,
+        m.id AS message_id,
         m.content,
         m.role,
         m.created_at
@@ -31,4 +31,4 @@ BEGIN
     ORDER BY
         m.created_at ASC;
 END;
-$$;
+$BODY$;
