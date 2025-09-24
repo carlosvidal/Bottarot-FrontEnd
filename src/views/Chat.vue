@@ -316,7 +316,7 @@ onMounted(async () => {
 });
 
 // Watch for chat ID changes (when navigating between chats)
-watch(() => route.params.chatId, (newChatId, oldChatId) => {
+watch(() => route.params.chatId, async (newChatId, oldChatId) => {
     if (newChatId !== oldChatId && newChatId) {
         console.log('💬 Chat changed from', oldChatId, 'to', newChatId);
         // Clear current readings when switching chats
