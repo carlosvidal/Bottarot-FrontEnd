@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { marked } from 'marked'; // Import marked
 
 const props = defineProps({
     message: {
@@ -22,12 +23,22 @@ const formattedTimestamp = computed(() => {
     const date = new Date(props.message.timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 });
+
+// New computed property to parse Markdown content
+const parsedContent = computed(() => {
+    // Only parse if it's an AI message, user messages are plain text
+    if (!isUser.value) {
+        return marked.parse(props.message.content);
+    }
+    return props.message.content; // Return as is for user messages
+});
 </script>
 
 <template>
     <div :class="messageClass">
         <div class="message-bubble">
-            <p class="message-content">{{ message.content }}</p>
+            <!-- Use v-html for parsed Markdown content -->
+            <p class="message-content" v-html="parsedContent"></p>
             <span class="message-timestamp">{{ formattedTimestamp }}</span>
         </div>
     </div>

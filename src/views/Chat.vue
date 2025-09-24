@@ -8,6 +8,7 @@ import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
 import { getPersonalizedGreeting } from '../utils/personalContext.js';
 import { useAuthStore } from '../stores/auth.js';
+import { tarotDeck } from '../data/tarotDeck.js'; // Import tarotDeck
 
 // Generate UUID v4
 function generateUUID() {
@@ -17,6 +18,33 @@ function generateUUID() {
         return v.toString(16);
     });
 }
+
+// Function to draw cards
+const drawCards = (numCards = 3) => {
+    const deck = [...tarotDeck]; // Create a mutable copy
+    const drawn = [];
+    const positions = ['Pasado', 'Presente', 'Futuro']; // Example positions
+
+    for (let i = 0; i < numCards; i++) {
+        if (deck.length === 0) break;
+
+        const randomIndex = Math.floor(Math.random() * deck.length);
+        const card = deck.splice(randomIndex, 1)[0];
+
+        // Assign orientation (upright or inverted)
+        const upright = Math.random() < 0.5; // 50% chance for inverted
+
+        drawn.push({
+            ...card,
+            upright: upright,
+            orientation: upright ? 'Derecha' : 'Invertida',
+            posicion: positions[i] || `Posición ${i + 1}`,
+            revealed: true, // For immediate display
+            isFlipped: true, // For immediate display
+        });
+    }
+    return drawn;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -115,33 +143,40 @@ const loadPersonalizedGreeting = async () => {
     }
 };
 
-const callAIService = async (chatId, question, userId) => {
-    console.log(`🤖 Calling AI service for chat ${chatId}, user ${userId} with question: ${question}`);
+const getTarotInterpretation = async (chatId, question, userId, drawnCards, history) => {
+    console.log(`🔮 Requesting tarot interpretation for chat ${chatId}, user ${userId} with question: "${question.substring(0, 50)}"...`);
     const API_URL = import.meta.env.VITE_API_URL;
 
     try {
-        const response = await fetch(`${API_URL}/api/chat/generate-ai-response`, {
+        const response = await fetch(`${API_URL}/api/tarot`, { // Call the /api/tarot endpoint
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                chatId: chatId,
-                userId: userId,
-                question: question,
+                chatId: chatId, // Not directly used by /api/tarot, but good for context
+                userId: userId, // Not directly used by /api/tarot, but good for context
+                pregunta: question,
+                cartas: drawnCards.map(card => ({
+                    nombre: card.name,
+                    orientacion: card.orientation,
+                    posicion: card.posicion
+                })),
+                contextoPersonal: '', // Assuming no personal context for now
+                history: history // Pass the chat history for contextual interpretation
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`AI service error: ${response.status} - ${errorData.message || response.statusText}`);
+            throw new Error(`Tarot API error: ${response.status} - ${errorData.message || response.statusText}`);
         }
 
         const data = await response.json();
-        return data.content || data.response;
+        return data.interpretation; // /api/tarot returns 'interpretation'
 
     } catch (error) {
-        console.error('❌ Error calling AI service:', error);
+        console.error('❌ Error calling Tarot API:', error);
         throw error;
     }
 };
@@ -155,33 +190,40 @@ const handleQuestionSubmitted = async (question) => {
         return;
     }
 
+    // 1. Add user message to readings
     const userMessage = {
         id: generateUUID(),
+        type: 'message', // New type property
         content: question,
         role: 'user',
         chatId: chatId,
         timestamp: new Date().toISOString()
     };
-
-    console.log('💬 Adding user question to chat:', chatId, question);
     readings.value.push(userMessage);
 
-    const tempAiMessage = {
+    // 2. Draw cards
+    const drawnCards = drawCards(3); // Draw 3 cards
+
+    // 3. Create a tarot reading object with loading state
+    const tarotReading = {
         id: generateUUID(),
-        content: "El oráculo está meditando sobre tu destino...",
-        role: 'assistant',
-        chatId: chatId,
+        type: 'tarotReading', // New type property
+        question: question,
+        drawnCards: drawnCards,
+        interpretation: '',
+        isLoading: true,
         timestamp: new Date().toISOString()
     };
-    readings.value.push(tempAiMessage);
+    readings.value.push(tarotReading);
+
     nextTick(() => {
         if (chatHistory.value) {
             chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
         }
     });
 
-
     try {
+        // Save user message to DB
         const { data: userMessageId, error: userMessageError } = await supabase.rpc('save_message', {
             p_chat_id: chatId,
             p_user_id: userId,
@@ -191,37 +233,49 @@ const handleQuestionSubmitted = async (question) => {
 
         if (userMessageError) {
             console.error('❌ Error saving user message:', userMessageError);
-            readings.value = readings.value.filter(msg => msg.id !== userMessage.id && msg.id !== tempAiMessage.id);
+            readings.value = readings.value.filter(item => item.id !== userMessage.id && item.id !== tarotReading.id);
             return;
         }
         userMessage.id = userMessageId;
 
-        const aiResponseContent = await callAIService(chatId, question, userId);
+        // Prepare history for AI context (only actual messages, not the tarotReading object itself)
+        const historyForAI = readings.value
+            .filter(item => item.type === 'message' && item.id !== userMessage.id) // Exclude current user message
+            .map(msg => ({ content: msg.content, role: msg.role }));
 
-        const index = readings.value.findIndex(msg => msg.id === tempAiMessage.id);
+
+        // 4. Call the backend's /api/tarot endpoint
+        const interpretation = await getTarotInterpretation(chatId, question, userId, drawnCards, historyForAI);
+
+        // 5. Update the tarot reading object with the interpretation
+        const index = readings.value.findIndex(item => item.id === tarotReading.id);
         if (index !== -1) {
-            readings.value[index].content = aiResponseContent;
-            readings.value[index].timestamp = new Date().toISOString();
+            readings.value[index].interpretation = interpretation;
+            readings.value[index].isLoading = false;
+            readings.value[index].timestamp = new Date().toISOString(); // Update timestamp
         }
 
+        // 6. Save AI interpretation to DB (as an assistant message)
         const { data: aiMessageId, error: aiMessageError } = await supabase.rpc('save_message', {
             p_chat_id: chatId,
             p_user_id: userId,
-            p_content: aiResponseContent,
-            p_role: 'assistant'
+            p_content: interpretation,
+            p_role: 'assistant',
+            // Optionally, save drawn cards as part of the message metadata if your 'messages' table supports it
+            // cards: drawnCards // This would require a 'cards' column in 'messages' table
         });
 
         if (aiMessageError) {
-            console.error('❌ Error saving AI message:', aiMessageError);
+            console.error('❌ Error saving AI interpretation:', aiMessageError);
         } else {
-            if (index !== -1) {
-                readings.value[index].id = aiMessageId;
-            }
+            // If we want to link the AI message ID to the tarotReading object, we can do it here
+            // readings.value[index].aiMessageId = aiMessageId; 
         }
 
     } catch (error) {
-        console.error('❌ Exception during question submission:', error);
-        readings.value = readings.value.filter(msg => msg.id !== tempAiMessage.id);
+        console.error('❌ Exception during question submission or tarot interpretation:', error);
+        // Remove user message and tarot reading if an error occurred
+        readings.value = readings.value.filter(item => item.id !== userMessage.id && item.id !== tarotReading.id);
     } finally {
         nextTick(() => {
             if (chatHistory.value) {
@@ -308,7 +362,10 @@ watch(() => route.params.chatId, (newChatId, oldChatId) => {
                     <p>Formula tu pregunta en la parte de abajo para que el oráculo te muestre tu destino.</p>
                 </div>
                 <div v-else class="readings-list">
-                    <ChatMessage v-for="message in readings" :key="message.id" :message="message" />
+                    <template v-for="item in readings" :key="item.id">
+                    <ChatMessage v-if="item.type === 'message'" :message="item" />
+                    <Reading v-else-if="item.type === 'tarotReading'" :cards="item.drawnCards" :interpretation="item.interpretation" :isLoading="item.isLoading" />
+                </template>
                 </div>
             </main>
 
