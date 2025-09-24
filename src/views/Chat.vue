@@ -143,6 +143,26 @@ const loadPersonalizedGreeting = async () => {
     }
 };
 
+    const API_URL = import.meta.env.VITE_API_URL;
+    console.log('DEBUG: API_URL en ensureChatExists:', API_URL);
+    try {
+        const response = await fetch(`${API_URL}/api/chats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, userId, title: 'Nuevo Chat' }) // Provide a default title
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Error ensuring chat exists: ${response.status} - ${errorData.message || response.statusText}`);
+        }
+        console.log(`✅ Chat ${chatId} ensured to exist in DB.`);
+    } catch (error) {
+        console.error(`❌ Failed to ensure chat ${chatId} exists in DB:`, error);
+        throw error; // Re-throw to stop further processing
+    }
+};
+
+// Placeholder for AI service call (this would be an actual API call)
 const getTarotInterpretation = async (chatId, question, userId, drawnCards, history) => {
     console.log(`🔮 Requesting tarot interpretation for chat ${chatId}, user ${userId} with question: "${question.substring(0, 50)}"...`);
     const API_URL = import.meta.env.VITE_API_URL;
@@ -187,6 +207,14 @@ const handleQuestionSubmitted = async (question) => {
 
     if (!userId) {
         console.error('❌ User not logged in. Cannot submit question.');
+        return;
+    }
+
+    // Ensure chat exists in DB before saving messages
+    try {
+        await ensureChatExists(chatId, userId);
+    } catch (error) {
+        console.error('❌ Aborting question submission due to chat creation failure.');
         return;
     }
 
