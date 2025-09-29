@@ -6,7 +6,8 @@ RETURNS TABLE (
     message_id uuid,
     content text,
     role text,
-    created_at timestamp with time zone
+    created_at timestamp with time zone,
+    cards jsonb
 )
 LANGUAGE plpgsql
 AS $BODY$
@@ -23,9 +24,10 @@ BEGIN
         m.id AS message_id,
         m.content,
         m.role,
-        m.created_at
+        m.created_at,
+        m.cards
     FROM
-        public.messages m -- Assuming 'messages' is the table name for chat messages
+        public.messages m
     WHERE
         m.chat_id = p_chat_id
     ORDER BY
