@@ -131,6 +131,7 @@ const handleQuestionSubmitted = async (question) => {
         type: 'message',
         content: question,
         role: 'user',
+        timestamp: new Date().toISOString() // <-- FIX
     };
     readings.value.push(userMessage);
     scrollToBottom();
@@ -183,6 +184,7 @@ const handleQuestionSubmitted = async (question) => {
                 interpretation: result.interpretation,
                 isLoading: false,
                 role: 'assistant',
+                timestamp: new Date().toISOString() // <-- FIX
             };
         } else { // type: 'message'
             assistantMessage = {
@@ -190,6 +192,7 @@ const handleQuestionSubmitted = async (question) => {
                 type: 'message',
                 content: result.text,
                 role: 'assistant',
+                timestamp: new Date().toISOString() // <-- FIX
             };
         }
         readings.value.push(assistantMessage);
@@ -437,4 +440,5 @@ const shareChat = () => console.log('🔗 Share - coming soon!');
 .chat-container::-webkit-scrollbar-track { background: #16213e; }
 .chat-container::-webkit-scrollbar-thumb { background-color: #0f3460; border-radius: 4px; border: 2px solid #16213e; }
 .chat-container::-webkit-scrollbar-thumb:hover { background-color: #1e4a83; }
+</style>}
 </style>
