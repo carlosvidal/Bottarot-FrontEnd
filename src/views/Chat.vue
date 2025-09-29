@@ -439,6 +439,4 @@ const shareChat = () => console.log('🔗 Share - coming soon!');
 .chat-container::-webkit-scrollbar { width: 8px; }
 .chat-container::-webkit-scrollbar-track { background: #16213e; }
 .chat-container::-webkit-scrollbar-thumb { background-color: #0f3460; border-radius: 4px; border: 2px solid #16213e; }
-.chat-container::-webkit-scrollbar-thumb:hover { background-color: #1e4a83; }
-</style>}
 </style>
