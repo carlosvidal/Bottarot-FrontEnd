@@ -263,12 +263,24 @@ const scrollToBottom = () => {
 // --- Lifecycle and Watchers ---
 onMounted(async () => {
     const chatId = initializeChatId();
-    try {
-        personalizedGreeting.value = await getPersonalizedGreeting();
-    } catch (e) {
-        console.warn('Could not load personalized greeting.');
+    
+    // Load greeting and history concurrently for speed
+    await Promise.all([
+        getPersonalizedGreeting().then(g => personalizedGreeting.value = g).catch(e => console.warn('Could not load personalized greeting.')),
+        loadChatHistory(chatId)
+    ]);
+
+    // Handle initial question from query parameter after setup
+    const initialQuestion = route.query.q;
+    if (initialQuestion && typeof initialQuestion === 'string') {
+        handleQuestionSubmitted(initialQuestion);
+        // Clean up query parameter but keep chat ID
+        router.replace({
+            name: 'chat',
+            params: { chatId: chatId },
+            query: {}
+        });
     }
-    await loadChatHistory(chatId);
 });
 
 watch(() => route.params.chatId, async (newChatId, oldChatId) => {
@@ -283,48 +295,6 @@ watch(readings, scrollToBottom, { deep: true });
 // --- Placeholder Functions ---
 const addToFavorites = () => console.log('⭐ Favorites - coming soon!');
 const shareChat = () => console.log('🔗 Share - coming soon!');
-
-watch(readings, () => {
-    nextTick(() => {
-        if (chatHistory.value) {
-            chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
-        }
-    });
-}, { deep: true });
-
-onMounted(async () => {
-    // Initialize chat ID if needed
-    const chatId = initializeChatId();
-
-    // Load personalized greeting
-    await loadPersonalizedGreeting();
-
-    // Handle initial question from query parameter
-    const initialQuestion = route.query.q;
-    if (initialQuestion && typeof initialQuestion === 'string') {
-        handleQuestionSubmitted(initialQuestion);
-        // Clean up query parameter but keep chat ID
-        router.replace({
-            name: 'chat',
-            params: { chatId: chatId },
-            query: {}
-        });
-    }
-
-    // Load chat history on mount
-    await loadChatHistory(chatId);
-});
-
-// Watch for chat ID changes (when navigating between chats)
-watch(() => route.params.chatId, async (newChatId, oldChatId) => {
-    if (newChatId !== oldChatId && newChatId) {
-        console.log('💬 Chat changed from', oldChatId, 'to', newChatId);
-        // Clear current readings when switching chats
-        readings.value = [];
-        // Load the new chat's history
-        await loadChatHistory(newChatId);
-    }
-});
 </script>
 
 <template>
