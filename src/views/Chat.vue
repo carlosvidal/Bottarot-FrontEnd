@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, watch, onMounted, computed } from 'vue';
+import { ref, nextTick, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chats';
@@ -12,7 +12,7 @@ import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
 import QuestionForm from '../components/QuestionForm.vue';
 
-// --- 1. Core State and Store Initialization ---
+// 1. Core State and Store Initialization
 const readings = ref([]);
 const chatHistory = ref(null);
 const isLoading = ref(false);
@@ -25,7 +25,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const chatStore = useChatStore();
 
-// --- 2. Function Declarations ---
+// 2. Function Declarations
 const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
 
 const loadChatHistory = async (chatId) => {
@@ -134,7 +134,7 @@ const handleQuestionSubmitted = async (question) => {
     }
 };
 
-// --- 3. Lifecycle Hooks and Watchers ---
+// 3. Lifecycle Hooks and Watchers
 onMounted(async () => {
     try {
         personalizedGreeting.value = await getPersonalizedGreeting();
@@ -145,15 +145,11 @@ onMounted(async () => {
 
 watch(() => route.params.chatId, (newChatId) => {
     if (newChatId && typeof newChatId === 'string') {
-        console.log(`▶️ Chat ID is present: ${newChatId}. Loading history.`);
         loadChatHistory(newChatId);
-    } else {
-        console.log('❔ No chat ID in route yet, router will handle redirection.');
     }
 }, { immediate: true });
 
 watch(readings, scrollToBottom, { deep: true });
-
 </script>
 
 <template>
@@ -185,7 +181,6 @@ watch(readings, scrollToBottom, { deep: true });
 </template>
 
 <style scoped>
-/* Styles are unchanged, but kept here for completeness */
 .chat-layout { display: flex; height: 100vh; background: #0f3460; }
 .sidebar-container { width: 280px; flex-shrink: 0; background: #16213e; transition: transform 0.3s ease; }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
