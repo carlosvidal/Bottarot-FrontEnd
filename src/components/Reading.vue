@@ -30,7 +30,7 @@ const formattedInterpretation = computed(() => {
 <template>
     <div>
         <div v-if="cards && cards.length > 0" class="cards-container">
-            <div v-for="(card, index) in cards" :key="card.key" class="card"
+            <div v-for="(card, index) in cards" :key="card.name" class="card"
                 :class="{ 'is-visible': card.revealed }">
                 <h4 v-if="card.isFlipped" class="card-position-title">{{ cardTitles[index] }}</h4>
                 <div class="card-visual-wrapper">
