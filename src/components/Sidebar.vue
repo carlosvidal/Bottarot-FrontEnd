@@ -1,12 +1,20 @@
 <script setup>
-import { onMounted, computed, watch } from 'vue';
+import { onMounted, computed, watch, ref, nextTick } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chats'; // Import the new chat store
 import { useRouter } from 'vue-router';
 
-const auth = useAuthStore();
-const chatStore = useChatStore(); // Use the chat store
 const router = useRouter();
+
+// Delay store initialization to avoid circular dependency issues
+const auth = ref(null);
+const chatStore = ref(null);
+
+onMounted(async () => {
+    await nextTick();
+    auth.value = useAuthStore();
+    chatStore.value = useChatStore();
+});
 
 const logout = () => {
     localStorage.clear();
@@ -15,35 +23,32 @@ const logout = () => {
 };
 
 // Computed properties for user display
-const userName = computed(() => auth.user?.email?.split('@')[0] || 'Usuario');
-const userAvatar = computed(() => (auth.user?.email || 'U').charAt(0).toUpperCase());
+const userName = computed(() => auth.value?.user?.email?.split('@')[0] || 'Usuario');
+const userAvatar = computed(() => (auth.value?.user?.email || 'U').charAt(0).toUpperCase());
 
-// Fetch initial data when the component is mounted and auth is ready
-onMounted(() => {
-    const unwatch = watch(() => auth.isInitialized, (isInitialized) => {
-        if (isInitialized && auth.isLoggedIn && auth.user && chatStore) {
-            console.log('Sidebar: Auth is ready, fetching chat list.');
-            try {
-                chatStore.fetchChatList(auth.user.id);
-            } catch (error) {
-                console.error('Error fetching chat list:', error);
-            }
-            unwatch();
+// Watch for auth initialization after stores are loaded
+watch(() => auth.value?.isInitialized, (isInitialized) => {
+    if (isInitialized && auth.value?.isLoggedIn && auth.value?.user && chatStore.value) {
+        console.log('Sidebar: Auth is ready, fetching chat list.');
+        try {
+            chatStore.value.fetchChatList(auth.value.user.id);
+        } catch (error) {
+            console.error('Error fetching chat list:', error);
         }
-    }, { immediate: true });
-});
+    }
+}, { immediate: true });
 
 // When a new chat is created, the router will navigate. We watch for that navigation
 // to refresh the chat list in the sidebar.
 watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     // A simple way to detect a new chat is to see if we are on a chat page
     // and the ID has changed. A more robust solution might involve global events.
-    if (router.currentRoute.value.name === 'chat' && newPath !== oldPath && chatStore && auth.user) {
+    if (router.currentRoute.value.name === 'chat' && newPath !== oldPath && chatStore.value && auth.value?.user) {
         console.log('Sidebar: Route changed, refreshing chat list.');
         // Add a small delay to give the new chat title time to be generated and saved.
         setTimeout(() => {
             try {
-                chatStore.fetchChatList(auth.user.id);
+                chatStore.value.fetchChatList(auth.value.user.id);
             } catch (error) {
                 console.error('Error fetching chat list:', error);
             }
@@ -54,7 +59,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 </script>
 
 <template>
-    <aside class="sidebar">
+    <aside class="sidebar" v-if="auth && chatStore">
         <div class="sidebar-content">
             <div class="profile-section">
                 <div class="avatar">{{ userAvatar }}</div>
