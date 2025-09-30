@@ -1,19 +1,23 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { defineStore, storeToRefs } from 'pinia';
+import { ref, computed } from 'vue';
 import { supabase } from '../lib/supabase';
 
 export const useChatStore = defineStore('chats', () => {
   const chatList = ref([]);
   const isLoading = ref(false);
+  let authStore = null;
 
   // Lazy load auth store to avoid circular dependency
-  const getAuthStore = () => {
-    const { useAuthStore } = require('./auth');
-    return useAuthStore();
+  const getAuthStore = async () => {
+    if (!authStore) {
+      const { useAuthStore } = await import('./auth');
+      authStore = useAuthStore();
+    }
+    return authStore;
   };
 
   const fetchChatList = async () => {
-    const auth = getAuthStore();
+    const auth = await getAuthStore();
     if (!auth.user) return;
     isLoading.value = true;
     try {
@@ -28,7 +32,7 @@ export const useChatStore = defineStore('chats', () => {
   };
 
   const deleteChat = async (chatId) => {
-    const auth = getAuthStore();
+    const auth = await getAuthStore();
     if (!auth.user) throw new Error('User not authenticated');
 
     // Optimistically remove from UI
@@ -54,7 +58,7 @@ export const useChatStore = defineStore('chats', () => {
   };
 
   const renameChat = async (chatId, newTitle) => {
-    const auth = getAuthStore();
+    const auth = await getAuthStore();
     if (!auth.user) throw new Error('User not authenticated');
     if (!newTitle || !newTitle.trim()) return;
 
@@ -83,7 +87,7 @@ export const useChatStore = defineStore('chats', () => {
   };
 
   const toggleFavorite = async (chatId) => {
-    const auth = getAuthStore();
+    const auth = await getAuthStore();
     if (!auth.user) throw new Error('User not authenticated');
 
     const chat = chatList.value.find(c => c.id === chatId);
