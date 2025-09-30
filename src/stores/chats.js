@@ -1,14 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { supabase } from '../lib/supabase';
-import { useAuthStore } from './auth';
 
 export const useChatStore = defineStore('chats', () => {
   const chatList = ref([]);
   const isLoading = ref(false);
-  const auth = useAuthStore();
+
+  // Lazy load auth store to avoid circular dependency
+  const getAuthStore = () => {
+    const { useAuthStore } = require('./auth');
+    return useAuthStore();
+  };
 
   const fetchChatList = async () => {
+    const auth = getAuthStore();
     if (!auth.user) return;
     isLoading.value = true;
     try {
@@ -23,6 +28,7 @@ export const useChatStore = defineStore('chats', () => {
   };
 
   const deleteChat = async (chatId) => {
+    const auth = getAuthStore();
     if (!auth.user) throw new Error('User not authenticated');
 
     // Optimistically remove from UI
@@ -31,9 +37,9 @@ export const useChatStore = defineStore('chats', () => {
     const deletedChat = chatList.value.splice(index, 1)[0];
 
     try {
-      const { error } = await supabase.rpc('delete_chat', { 
-        p_chat_id: chatId, 
-        p_user_id: auth.user.id 
+      const { error } = await supabase.rpc('delete_chat', {
+        p_chat_id: chatId,
+        p_user_id: auth.user.id
       });
       if (error) {
         // If the delete fails, revert the change in the UI
@@ -48,6 +54,7 @@ export const useChatStore = defineStore('chats', () => {
   };
 
   const renameChat = async (chatId, newTitle) => {
+    const auth = getAuthStore();
     if (!auth.user) throw new Error('User not authenticated');
     if (!newTitle || !newTitle.trim()) return;
 
@@ -76,6 +83,7 @@ export const useChatStore = defineStore('chats', () => {
   };
 
   const toggleFavorite = async (chatId) => {
+    const auth = getAuthStore();
     if (!auth.user) throw new Error('User not authenticated');
 
     const chat = chatList.value.find(c => c.id === chatId);
