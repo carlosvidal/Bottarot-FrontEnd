@@ -33,32 +33,65 @@ function generateUUID() {
 
 // --- Chat History Management ---
 const loadChatHistory = async (chatId) => {
-    // For this final debug, we ignore the chatId and call the firehose function
-    console.log('[DEBUG] Calling debug_get_all_messages()...');
+    if (!chatId || !authStore.user?.id) {
+        console.warn('⚠️ Cannot load chat history: Missing chatId or user ID.');
+        readings.value = [];
+        return;
+    }
+
     isLoadingHistory.value = true;
     readings.value = [];
 
     try {
-        const { data, error } = await supabase.rpc('debug_get_all_messages');
+        console.log(`💬 Loading chat history for chat ID: ${chatId}`);
+        const { data, error } = await supabase.rpc('get_chat_history', {
+            p_chat_id: chatId
+        });
 
         if (error) {
-            console.error('❌ [DEBUG] Error calling debug_get_all_messages:', error);
-            return;
-        }
-
-        console.log('✅✅✅ [DEBUG] RAW DATA FROM DATABASE:', data);
-
-        if (data && data.length > 0) {
-            console.log('🎉 SUCCESS! Data is readable from the messages table.');
+            console.error('❌ Error fetching chat history:', error);
         } else {
-            console.log('💣 FAILURE! Even with no WHERE clause, the messages table returns an empty array.');
+            console.log('✅ Chat history loaded:', data);
+            const loadedReadings = [];
+            let lastUserQuestion = '';
+
+            data.forEach(msg => {
+                if (msg.role === 'user') {
+                    loadedReadings.push({
+                        id: msg.message_id,
+                        type: 'message',
+                        content: msg.content,
+                        role: msg.role,
+                        timestamp: msg.created_at
+                    });
+                    lastUserQuestion = msg.content;
+                } else if (msg.role === 'assistant') {
+                    if (msg.cards && msg.cards.length > 0) {
+                        loadedReadings.push({
+                            id: msg.message_id,
+                            type: 'tarotReading',
+                            question: lastUserQuestion,
+                            drawnCards: msg.cards,
+                            interpretation: msg.content,
+                            isLoading: false,
+                            timestamp: msg.created_at
+                        });
+                    } else {
+                        loadedReadings.push({
+                            id: msg.message_id,
+                            type: 'message',
+                            content: msg.content,
+                            role: 'assistant',
+                            timestamp: msg.created_at
+                        });
+                    }
+                    lastUserQuestion = '';
+                }
+            });
+            readings.value = loadedReadings;
         }
-
-        // We are not processing the data into the UI for this test, just logging it.
-        // readings.value = processedData;
-
     } catch (err) {
-        console.error('❌ [DEBUG] Exception in debug test:', err);
+        console.error('❌ Exception while loading chat history:', err);
     } finally {
         isLoadingHistory.value = false;
     }
