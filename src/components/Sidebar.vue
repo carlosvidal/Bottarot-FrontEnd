@@ -21,9 +21,13 @@ const userAvatar = computed(() => (auth.user?.email || 'U').charAt(0).toUpperCas
 // Fetch initial data when the component is mounted and auth is ready
 onMounted(() => {
     const unwatch = watch(() => auth.isInitialized, (isInitialized) => {
-        if (isInitialized && auth.isLoggedIn) {
+        if (isInitialized && auth.isLoggedIn && chatStore) {
             console.log('Sidebar: Auth is ready, fetching chat list.');
-            chatStore.fetchChatList();
+            try {
+                chatStore.fetchChatList();
+            } catch (error) {
+                console.error('Error fetching chat list:', error);
+            }
             unwatch();
         }
     }, { immediate: true });
@@ -34,11 +38,15 @@ onMounted(() => {
 watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     // A simple way to detect a new chat is to see if we are on a chat page
     // and the ID has changed. A more robust solution might involve global events.
-    if (router.currentRoute.value.name === 'chat' && newPath !== oldPath) {
+    if (router.currentRoute.value.name === 'chat' && newPath !== oldPath && chatStore) {
         console.log('Sidebar: Route changed, refreshing chat list.');
         // Add a small delay to give the new chat title time to be generated and saved.
         setTimeout(() => {
-            chatStore.fetchChatList();
+            try {
+                chatStore.fetchChatList();
+            } catch (error) {
+                console.error('Error fetching chat list:', error);
+            }
         }, 1500);
     }
 });
