@@ -86,45 +86,20 @@ const handleQuestionSubmitted = async (question) => {
     try {
         const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
         const API_URL = import.meta.env.VITE_API_URL;
-        const decideResponse = await fetch(`${API_URL}/api/chat/decide`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, userId, chatId }) });
-        if (!decideResponse.ok) throw new Error('El Agente Decisor ha fallado.');
-        const decisionResult = await decideResponse.json();
+        const decideResponse = await fetch(`${API_URL}/api/chat/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, userId, chatId }) });
+        if (!decideResponse.ok) { const errorData = await decideResponse.json(); throw new Error(errorData.error || 'Error en la comunicación con el servidor.'); }
+        const result = await decideResponse.json();
 
-        if (decisionResult.type === 'message') {
-            const assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: decisionResult.text, role: 'assistant', timestamp: new Date().toISOString() };
-            readings.value.push(assistantMessage);
-            await saveMessageToDb({ chatId, userId, role: 'assistant', content: decisionResult.text });
-        } else if (decisionResult.type === 'cards_drawn') {
-            if (decisionResult.title) {
-                setTimeout(() => chatStore.fetchChatList(), 1000);
-            }
-            const tarotReading = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: decisionResult.cards.map(c => ({ ...c, isFlipped: false })), interpretation: '', isLoading: true, role: 'assistant', timestamp: new Date().toISOString() };
-            readings.value.push(tarotReading);
-            scrollToBottom();
-            await nextTick();
-            for (let i = 0; i < tarotReading.drawnCards.length; i++) {
-                await new Promise(resolve => setTimeout(resolve, 400));
-                tarotReading.drawnCards[i].isFlipped = true;
-            }
-
-            const personalCtx = await generatePersonalContext();
-            const interpretResponse = await fetch(`${API_URL}/api/chat/interpret`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, personalContext: personalCtx.context, cards: decisionResult.cards, chatId }) });
-            if (!interpretResponse.ok) throw new Error('El Agente Intérprete ha fallado.');
-
-            const reader = interpretResponse.body.getReader();
-            const decoder = new TextDecoder();
-            let finalInterpretation = '';
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                finalInterpretation += chunk;
-                tarotReading.interpretation = finalInterpretation;
-                scrollToBottom();
-            }
-            tarotReading.isLoading = false;
-            await saveMessageToDb({ chatId, userId, role: 'assistant', content: finalInterpretation, cards: decisionResult.cards });
+        let assistantMessage;
+        if (result.type === 'tarot_reading') {
+            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: result.cards, interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
+            if (result.title) { setTimeout(() => chatStore.fetchChatList(), 1000); }
+        } else {
+            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: result.text, role: 'assistant', timestamp: new Date().toISOString() };
         }
+        readings.value.push(assistantMessage);
+        await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.interpretation || assistantMessage.content, cards: assistantMessage.drawnCards || null });
+
     } catch (error) {
         console.error('❌ Error in handleQuestionSubmitted:', error);
         readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
