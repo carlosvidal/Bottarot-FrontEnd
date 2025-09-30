@@ -1,14 +1,12 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { onMounted, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useChatStore } from '../stores/chats'; // Import the new chat store
 import { useRouter } from 'vue-router';
-import { supabase } from '../lib/supabase.js'
 
 const auth = useAuthStore();
+const chatStore = useChatStore(); // Use the chat store
 const router = useRouter();
-const userProfile = ref(null);
-const chatList = ref([]);
-const isLoadingChats = ref(true);
 
 const logout = () => {
     localStorage.clear();
@@ -16,52 +14,32 @@ const logout = () => {
     window.location.href = '/';
 };
 
-const userName = computed(() => userProfile.value?.name || auth.user?.email?.split('@')[0] || 'Usuario');
-const userAvatar = computed(() => (userProfile.value?.name || auth.user?.email || 'U').charAt(0).toUpperCase());
+// Computed properties for user display
+const userName = computed(() => auth.user?.email?.split('@')[0] || 'Usuario');
+const userAvatar = computed(() => (auth.user?.email || 'U').charAt(0).toUpperCase());
 
-const loadUserProfile = async () => {
-    if (!auth.user) return;
-    try {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', auth.user.id).maybeSingle();
-        if (profile) userProfile.value = profile;
-    } catch (error) {
-        console.error('Error loading user profile:', error);
-    }
-};
-
-const fetchChatList = async () => {
-    if (!auth.user) return;
-    isLoadingChats.value = true;
-    try {
-        console.log('sidebar fetching chat list')
-        const { data, error } = await supabase.rpc('get_chat_list', { p_user_id: auth.user.id });
-        if (error) throw error;
-        chatList.value = data;
-        console.log('sidebar chat list loaded', data)
-    } catch (error) {
-        console.error('Error fetching chat list:', error);
-    } finally {
-        isLoadingChats.value = false;
-    }
-};
-
+// Fetch initial data when the component is mounted and auth is ready
 onMounted(() => {
-    // Use a watcher to ensure auth is initialized before fetching data
     const unwatch = watch(() => auth.isInitialized, (isInitialized) => {
         if (isInitialized && auth.isLoggedIn) {
-            loadUserProfile();
-            fetchChatList();
-            unwatch(); // Stop watching once we've loaded the data
+            console.log('Sidebar: Auth is ready, fetching chat list.');
+            chatStore.fetchChatList();
+            unwatch();
         }
     }, { immediate: true });
 });
 
-// Watch for route changes to potentially refresh the list
-watch(() => router.currentRoute.value.name, (newName) => {
-    // Refresh chat list if we navigate away from a chat, for example after creating a new one
-    if (newName === 'chat') {
-        // A small delay might be needed to allow the new chat to be created before fetching
-        setTimeout(fetchChatList, 500);
+// When a new chat is created, the router will navigate. We watch for that navigation
+// to refresh the chat list in the sidebar.
+watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
+    // A simple way to detect a new chat is to see if we are on a chat page
+    // and the ID has changed. A more robust solution might involve global events.
+    if (router.currentRoute.value.name === 'chat' && newPath !== oldPath) {
+        console.log('Sidebar: Route changed, refreshing chat list.');
+        // Add a small delay to give the new chat title time to be generated and saved.
+        setTimeout(() => {
+            chatStore.fetchChatList();
+        }, 1500);
     }
 });
 
@@ -80,10 +58,13 @@ watch(() => router.currentRoute.value.name, (newName) => {
 
             <nav class="chat-history">
                 <h3 class="history-title">Chats Anteriores</h3>
-                <div v-if="isLoadingChats">Cargando chats...</div>
-                <ul v-else-if="chatList.length > 0">
-                    <li v-for="chat in chatList" :key="chat.id">
-                        <router-link :to="{ name: 'chat', params: { chatId: chat.id } }" class="history-link">{{ chat.title || 'Chat sin título' }}</router-link>
+                <div v-if="chatStore.isLoading">Cargando chats...</div>
+                <ul v-else-if="chatStore.chatList.length > 0">
+                    <li v-for="chat in chatStore.chatList" :key="chat.id">
+                        <router-link :to="{ name: 'chat', params: { chatId: chat.id } }" class="history-link">
+                            <span v-if="chat.is_favorite">⭐ </span>
+                            <span>{{ chat.title || 'Chat sin título' }}</span>
+                        </router-link>
                     </li>
                 </ul>
                 <div v-else>No hay chats recientes.</div>
