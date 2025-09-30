@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue';
 import { useChatStore } from '../stores/chats';
+import { useAuthStore } from '../stores/auth';
 import { useRoute, useRouter } from 'vue-router';
 
 defineEmits(['new-chat', 'share-chat']);
 
 const chatStore = useChatStore();
+const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -26,9 +28,9 @@ const startRename = async () => {
 };
 
 const saveRename = async () => {
-  if (!isRenaming.value || !currentChat.value) return;
+  if (!isRenaming.value || !currentChat.value || !auth.user) return;
   try {
-    await chatStore.renameChat(currentChat.value.id, newTitle.value);
+    await chatStore.renameChat(currentChat.value.id, newTitle.value, auth.user.id);
   } catch (error) {
     console.error('Failed to rename chat:', error);
     alert('No se pudo renombrar el chat.');
@@ -39,10 +41,10 @@ const saveRename = async () => {
 
 const deleteCurrentChat = async () => {
   const chatId = route.params.chatId;
-  if (!chatId) return;
+  if (!chatId || !auth.user) return;
   if (window.confirm('¿Estás seguro de que quieres eliminar este chat? Esta acción no se puede deshacer.')) {
     try {
-      await chatStore.deleteChat(chatId);
+      await chatStore.deleteChat(chatId, auth.user.id);
       router.push({ name: 'new-chat' });
     } catch (error) {
       console.error('Failed to delete chat:', error);
@@ -52,8 +54,8 @@ const deleteCurrentChat = async () => {
 };
 
 const toggleFavorite = () => {
-    if (!currentChat.value) return;
-    chatStore.toggleFavorite(currentChat.value.id).catch(error => {
+    if (!currentChat.value || !auth.user) return;
+    chatStore.toggleFavorite(currentChat.value.id, auth.user.id).catch(error => {
         alert('No se pudo actualizar el estado de favorito.');
     });
 };
