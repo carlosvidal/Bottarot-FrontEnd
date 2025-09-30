@@ -78,14 +78,21 @@ const router = createRouter({
       beforeEnter: (to, from, next) => {
         const auth = useAuthStore();
         if (auth.isLoggedIn && auth.isFullyRegistered) {
-          next({ name: 'chat' });
+          next({ name: 'new-chat' });
         } else {
           next();
         }
       }
     },
     {
-      path: '/chat/:chatId?',
+      path: '/chat',
+      name: 'new-chat',
+      redirect: () => {
+        return { name: 'chat', params: { chatId: generateUUID() } }
+      }
+    },
+    {
+      path: '/chat/:chatId',
       name: 'chat',
       component: Chat,
       beforeEnter: async (to, from, next) => {
@@ -263,6 +270,11 @@ const router = createRouter({
 //   }
 
 //   console.log('âœ… Global guard - Auth ready, proceeding with navigation')
+//   next()
+// })
+
+export default router
+œ… Global guard - Auth ready, proceeding with navigation')
 //   next()
 // })
 
