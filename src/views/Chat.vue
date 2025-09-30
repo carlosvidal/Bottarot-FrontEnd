@@ -93,7 +93,13 @@ const handleQuestionSubmitted = async (question) => {
         let assistantMessage;
         if (result.type === 'tarot_reading') {
             assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: result.cards, interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
-            if (result.title) { setTimeout(() => chatStore.fetchChatList(), 1000); }
+            if (result.title) { 
+                // This is a fire-and-forget update to the sidebar.
+                setTimeout(() => {
+                    const chatStore = useChatStore();
+                    chatStore.fetchChatList();
+                }, 1000);
+            }
         } else {
             assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: result.text, role: 'assistant', timestamp: new Date().toISOString() };
         }
