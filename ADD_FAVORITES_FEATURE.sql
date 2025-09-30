@@ -18,6 +18,7 @@ $$;
 
 -- 3. Update the get_chat_list function to include the is_favorite column
 -- This replaces the existing get_chat_list function
+DROP FUNCTION IF EXISTS public.get_chat_list(uuid); -- Add this line to drop the old function
 CREATE OR REPLACE FUNCTION public.get_chat_list(p_user_id uuid)
 RETURNS TABLE ( 
     id uuid,
