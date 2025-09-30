@@ -78,15 +78,19 @@ export const useChatStore = defineStore('chats', () => {
   const toggleFavorite = async (chatId) => {
     if (!auth.user) throw new Error('User not authenticated');
 
-    const index = chatList.value.findIndex(c => c.id === chatId);
-    if (index === -1) return;
+    const chat = chatList.value.find(c => c.id === chatId);
+    if (!chat) return;
 
     // Optimistically update UI
-    const oldStatus = chatList.value[index].is_favorite;
-    chatList.value[index].is_favorite = !oldStatus;
+    const oldStatus = chat.is_favorite;
+    chat.is_favorite = !oldStatus;
 
     // Re-sort the list to show favorites at the top
-    chatList.value.sort((a, b) => b.is_favorite - a.is_favorite || new Date(b.created_at) - new Date(a.created_at));
+    chatList.value.sort((a, b) => {
+      const favDiff = (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0);
+      if (favDiff !== 0) return favDiff;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
 
     try {
       const { error } = await supabase.rpc('toggle_chat_favorite', {
@@ -95,7 +99,7 @@ export const useChatStore = defineStore('chats', () => {
       });
       if (error) {
         // Revert on error
-        chatList.value[index].is_favorite = oldStatus;
+        chat.is_favorite = oldStatus;
         throw error;
       }
     } catch (error) {
