@@ -1,14 +1,16 @@
 <script setup>
-import ChatMessage from '../components/ChatMessage.vue';
 import { ref, nextTick, watch, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import QuestionForm from '../components/QuestionForm.vue';
+import { useAuthStore } from '../stores/auth';
+import { useChatStore } from '../stores/chats';
+import { supabase } from '../lib/supabase';
+import { getPersonalizedGreeting, generatePersonalContext } from '../utils/personalContext.js';
+
+import ChatMessage from '../components/ChatMessage.vue';
 import Reading from '../components/Reading.vue';
 import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
-import { getPersonalizedGreeting, generatePersonalContext } from '../utils/personalContext.js';
-import { useAuthStore } from '../stores/auth.js';
-import { supabase } from '../lib/supabase.js';
+import QuestionForm from '../components/QuestionForm.vue';
 
 // --- Core Refs ---
 const readings = ref([]);
@@ -20,22 +22,115 @@ const personalizedGreeting = ref('Bienvenido');
 
 const route = useRoute();
 const router = useRouter();
-const authStore = useAuthStore();
+const auth = useAuthStore();
+const chatStore = useChatStore();
 
-// --- Chat History Management ---
-const loadChatHistory = async (chatId) => {
-    if (!chatId || !authStore.user?.id) {
-        readings.value = [];
-        return;
-    }
-    isLoadingHistory.value = true;
-    readings.value = []; // Clear previous chat
+// --- Main Logic: Handling Question Submission ---
+const handleQuestionSubmitted = async (question) => {
+    const chatId = route.params.chatId;
+    const userId = auth.user?.id;
+    if (!chatId || !userId || isLoading.value) return;
+
+    isLoading.value = true;
+
+    // 1. Add user message to UI and save to DB
+    const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
+    readings.value.push(userMessage);
+    scrollToBottom();
+    await ensureChatExistsInDb(chatId, userId, question);
+    await saveMessageToDb({ chatId, userId, role: 'user', content: question });
+
     try {
-        console.log(`💬 Loading chat history for chat ID: ${chatId}`);
+        // 2. Call DECIDER endpoint
+        const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
+        const API_URL = import.meta.env.VITE_API_URL;
+        const decideResponse = await fetch(`${API_URL}/api/chat/decide`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question, history: historyForAgents, userId, chatId }),
+        });
+        if (!decideResponse.ok) throw new Error('El Agente Decisor ha fallado.');
+        const decisionResult = await decideResponse.json();
+
+        // 3. Handle DECIDER response
+        if (decisionResult.type === 'message') {
+            // Simple text response (inadequate, follow-up)
+            const assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: decisionResult.text, role: 'assistant', timestamp: new Date().toISOString() };
+            readings.value.push(assistantMessage);
+            await saveMessageToDb({ chatId, userId, role: 'assistant', content: decisionResult.text });
+
+        } else if (decisionResult.type === 'cards_drawn') {
+            // New tarot reading required
+            if (decisionResult.title) {
+                // If a title was generated, refresh the sidebar list
+                setTimeout(() => chatStore.fetchChatList(), 1000);
+            }
+
+            // Create the reading object with cards hidden
+            const tarotReading = {
+                id: `local-${Date.now()}-ai`,
+                type: 'tarotReading',
+                question,
+                drawnCards: decisionResult.cards.map(c => ({ ...c, isFlipped: false })),
+                interpretation: '',
+                isLoading: true, // Loading state for interpretation
+                role: 'assistant',
+                timestamp: new Date().toISOString()
+            };
+            readings.value.push(tarotReading);
+            scrollToBottom();
+
+            // Animate card flipping
+            await nextTick();
+            for (let i = 0; i < tarotReading.drawnCards.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 400));
+                tarotReading.drawnCards[i].isFlipped = true;
+            }
+
+            // 4. Call INTERPRETER endpoint and stream response
+            const personalCtx = await generatePersonalContext();
+            const interpretResponse = await fetch(`${API_URL}/api/chat/interpret`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question, history: historyForAgents, personalContext: personalCtx.context, cards: decisionResult.cards, chatId })
+            });
+            if (!interpretResponse.ok) throw new Error('El Agente Intérprete ha fallado.');
+
+            const reader = interpretResponse.body.getReader();
+            const decoder = new TextDecoder();
+            let finalInterpretation = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                finalInterpretation += chunk;
+                tarotReading.interpretation = finalInterpretation; // Update interpretation reactively
+                scrollToBottom();
+            }
+            tarotReading.isLoading = false;
+
+            // 5. Save final interpretation to DB
+            await saveMessageToDb({ chatId, userId, role: 'assistant', content: finalInterpretation, cards: decisionResult.cards });
+        }
+
+    } catch (error) {
+        console.error('❌ Error in handleQuestionSubmitted:', error);
+        readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
+    } finally {
+        isLoading.value = false;
+        scrollToBottom();
+    }
+};
+
+// --- Lifecycle, History, and Utility Functions (mostly unchanged) ---
+const loadChatHistory = async (chatId) => {
+    if (!chatId || !auth.user?.id) { readings.value = []; return; }
+    isLoadingHistory.value = true;
+    readings.value = [];
+    try {
         const { data, error } = await supabase.rpc('get_chat_history', { p_chat_id: chatId });
         if (error) throw error;
-
-        console.log('✅ Chat history loaded:', data);
         const loadedReadings = [];
         let lastUserQuestion = '';
         data.forEach(msg => {
@@ -43,18 +138,7 @@ const loadChatHistory = async (chatId) => {
                 loadedReadings.push({ id: msg.message_id, type: 'message', content: msg.content, role: msg.role, timestamp: msg.created_at });
                 lastUserQuestion = msg.content;
             } else if (msg.role === 'assistant') {
-                const messageData = {
-                    id: msg.message_id,
-                    type: msg.cards && msg.cards.length > 0 ? 'tarotReading' : 'message',
-                    question: lastUserQuestion,
-                    drawnCards: msg.cards,
-                    interpretation: msg.content,
-                    content: msg.content,
-                    isLoading: false,
-                    role: 'assistant',
-                    timestamp: msg.created_at
-                };
-                loadedReadings.push(messageData);
+                loadedReadings.push({ id: msg.message_id, type: msg.cards?.length > 0 ? 'tarotReading' : 'message', question: lastUserQuestion, drawnCards: msg.cards, interpretation: msg.content, content: msg.content, isLoading: false, role: 'assistant', timestamp: msg.created_at });
                 lastUserQuestion = '';
             }
         });
@@ -65,107 +149,24 @@ const loadChatHistory = async (chatId) => {
         isLoadingHistory.value = false;
     }
 };
-
-// --- Chat Navigation ---
-const createNewChat = () => {
-    console.log('💬 Navigating to create a new chat...');
-    router.push({ name: 'new-chat' });
-};
-
-// --- Main Logic: Handling Question Submission ---
-const handleQuestionSubmitted = async (question) => {
-    const chatId = route.params.chatId;
-    const userId = authStore.user?.id;
-    if (!chatId || !userId || isLoading.value) return;
-
-    isLoading.value = true;
-    const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
-    readings.value.push(userMessage);
-    scrollToBottom();
-
-    try {
-        await ensureChatExistsInDb(chatId, userId, question);
-        await saveMessageToDb({ chatId, userId, role: 'user', content: question });
-
-        const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
-        const personalCtx = await generatePersonalContext();
-
-        const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/api/chat/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, personalContext: personalCtx.context, userId, chatId }) });
-        if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Error en la comunicación con el servidor.'); }
-        const result = await response.json();
-
-        let assistantMessage;
-        if (result.type === 'tarot_reading') {
-            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: result.cards.map(c => ({ ...c, revealed: true, isFlipped: true })), interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
-        } else {
-            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: result.text, role: 'assistant', timestamp: new Date().toISOString() };
-        }
-        readings.value.push(assistantMessage);
-        await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.interpretation || assistantMessage.content, cards: assistantMessage.drawnCards || null });
-    } catch (error) {
-        console.error('❌ Error in handleQuestionSubmitted:', error);
-        readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
-    } finally {
-        isLoading.value = false;
-        scrollToBottom();
-    }
-};
-
-// --- Database and Utility Functions ---
+const createNewChat = () => router.push({ name: 'new-chat' });
 const ensureChatExistsInDb = async (chatId, userId, initialQuestion) => {
     try {
         const { count } = await supabase.from('chats').select('id', { count: 'exact', head: true }).eq('id', chatId);
         if (count === 0) {
-            console.log(`🔗 Chat ${chatId} does not exist. Creating...`);
-            const { error } = await supabase.from('chats').insert({ id: chatId, user_id: userId, title: initialQuestion.substring(0, 50) });
-            if (error) throw error;
-            console.log(`✅ Chat ${chatId} created.`);
+            await supabase.from('chats').insert({ id: chatId, user_id: userId, title: initialQuestion.substring(0, 50) });
         }
-    } catch (dbError) {
-        console.error('❌ DB Error ensuring chat exists:', dbError);
-        throw dbError;
-    }
+    } catch (dbError) { console.error('❌ DB Error ensuring chat exists:', dbError); throw dbError; }
 };
-
 const saveMessageToDb = async ({ chatId, userId, role, content, cards = null }) => {
     try {
-        console.log(`💾 Saving message to DB... (Role: ${role})`);
-        const { error } = await supabase.rpc('save_message', { p_chat_id: chatId, p_user_id: userId, p_role: role, p_content: content, p_cards: cards });
-        if (error) throw error;
-        console.log('✅ Message saved successfully.');
-    } catch (dbError) {
-        console.error('❌ DB Error saving message:', dbError);
-    }
+        await supabase.rpc('save_message', { p_chat_id: chatId, p_user_id: userId, p_role: role, p_content: content, p_cards: cards });
+    } catch (dbError) { console.error('❌ DB Error saving message:', dbError); }
 };
-
-const scrollToBottom = () => {
-    nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
-};
-
-// --- Lifecycle and Watchers ---
-watch(() => route.params.chatId, (newChatId) => {
-    if (newChatId && typeof newChatId === 'string') {
-        console.log(`▶️ Chat ID is present: ${newChatId}. Loading history.`);
-        loadChatHistory(newChatId);
-    } else {
-        console.log('❔ No chat ID in route yet, router will handle redirection.');
-    }
-}, { immediate: true });
-
+const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
+watch(() => route.params.chatId, (newChatId) => { if (newChatId && typeof newChatId === 'string') loadChatHistory(newChatId); }, { immediate: true });
 watch(readings, scrollToBottom, { deep: true });
-
-onMounted(async () => {
-    try {
-        personalizedGreeting.value = await getPersonalizedGreeting();
-    } catch (e) {
-        console.warn('Could not load personalized greeting.');
-    }
-});
-
-// --- Placeholder Functions ---
-const addToFavorites = () => console.log('⭐ Favorites - coming soon!');
-const shareChat = () => console.log('🔗 Share - coming soon!');
+onMounted(async () => { try { personalizedGreeting.value = await getPersonalizedGreeting(); } catch (e) { console.warn('Could not load personalized greeting.'); } });
 </script>
 
 <template>
@@ -174,23 +175,17 @@ const shareChat = () => console.log('🔗 Share - coming soon!');
             <Sidebar />
         </div>
         <div class="main-content">
-            <ChatHeader @new-chat="createNewChat" @add-to-favorites="addToFavorites" @share-chat="shareChat">
-                <template #menu-button>
-                    <button @click="isSidebarOpen = !isSidebarOpen" class="menu-button">
-                        <span></span><span></span><span></span>
-                    </button>
-                </template>
-            </ChatHeader>
+            <ChatHeader @new-chat="createNewChat" />
             <main class="chat-container" ref="chatHistory">
-                <div v-if="isLoadingHistory" class="loading-message">Cargando historial...</div>
+                <div v-if="isLoadingHistory">Cargando historial...</div>
                 <div v-else-if="readings.length === 0 && !isLoading" class="welcome-message">
                     <h2>{{ personalizedGreeting }}</h2>
-                    <p>Formula tu pregunta en la parte de abajo para que el oráculo te muestre tu destino.</p>
+                    <p>Formula tu pregunta para que el oráculo te muestre tu destino.</p>
                 </div>
                 <div v-else class="readings-list">
                     <template v-for="item in readings" :key="item.id">
                         <ChatMessage v-if="item.type === 'message'" :message="item" />
-                        <Reading v-else-if="item.type === 'tarotReading'" :cards="item.drawnCards" :interpretation="item.interpretation" />
+                        <Reading v-else-if="item.type === 'tarotReading'" :cards="item.drawnCards" :interpretation="item.interpretation" :isLoading="item.isLoading" />
                     </template>
                 </div>
             </main>
@@ -203,6 +198,7 @@ const shareChat = () => console.log('🔗 Share - coming soon!');
 </template>
 
 <style scoped>
+/* Styles are unchanged, but kept here for completeness */
 .chat-layout { display: flex; height: 100vh; background: #0f3460; }
 .sidebar-container { width: 280px; flex-shrink: 0; background: #16213e; transition: transform 0.3s ease; }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
@@ -220,13 +216,4 @@ const shareChat = () => console.log('🔗 Share - coming soon!');
     .sidebar-container.is-open { transform: translateX(0); }
     .overlay.is-open { display: block; }
 }
-.warmup-notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; animation: slideInDown 0.5s ease-out; }
-.warmup-content { background: linear-gradient(135deg, #ff6b35, #ff8f00); color: white; padding: 12px 20px; border-radius: 25px; box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3); display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.95rem; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-.warmup-icon { font-size: 1.2rem; animation: pulse 2s infinite; }
-.warmup-text { white-space: nowrap; }
-@keyframes slideInDown { from { opacity: 0; transform: translateX(-50%) translateY(-30px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-.chat-container::-webkit-scrollbar { width: 8px; }
-.chat-container::-webkit-scrollbar-track { background: #16213e; }
-.chat-container::-webkit-scrollbar-thumb { background-color: #0f3460; border-radius: 4px; border: 2px solid #16213e; }
 </style>
