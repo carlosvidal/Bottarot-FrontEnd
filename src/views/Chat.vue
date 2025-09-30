@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase.js';
 // --- Core Refs ---
 const readings = ref([]);
 const chatHistory = ref(null);
-const isLoading = ref(false); // General loading state for the form
+const isLoading = ref(false);
 const isLoadingHistory = ref(false);
 const isSidebarOpen = ref(false);
 const personalizedGreeting = ref('Bienvenido');
@@ -21,15 +21,6 @@ const personalizedGreeting = ref('Bienvenido');
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-
-// --- UUID Generation ---
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
 
 // --- Chat History Management ---
 const loadChatHistory = async (chatId) => {
@@ -40,56 +31,39 @@ const loadChatHistory = async (chatId) => {
     }
 
     isLoadingHistory.value = true;
-    readings.value = [];
+    readings.value = []; // Clear previous chat
 
     try {
         console.log(`💬 Loading chat history for chat ID: ${chatId}`);
-        const { data, error } = await supabase.rpc('get_chat_history', {
-            p_chat_id: chatId
+        const { data, error } = await supabase.rpc('get_chat_history', { p_chat_id: chatId });
+
+        if (error) throw error;
+
+        console.log('✅ Chat history loaded:', data);
+        const loadedReadings = [];
+        let lastUserQuestion = '';
+
+        data.forEach(msg => {
+            if (msg.role === 'user') {
+                loadedReadings.push({ id: msg.message_id, type: 'message', content: msg.content, role: msg.role, timestamp: msg.created_at });
+                lastUserQuestion = msg.content;
+            } else if (msg.role === 'assistant') {
+                const messageData = {
+                    id: msg.message_id,
+                    type: msg.cards && msg.cards.length > 0 ? 'tarotReading' : 'message',
+                    question: lastUserQuestion,
+                    drawnCards: msg.cards,
+                    interpretation: msg.content,
+                    content: msg.content,
+                    isLoading: false,
+                    role: 'assistant',
+                    timestamp: msg.created_at
+                };
+                loadedReadings.push(messageData);
+                lastUserQuestion = '';
+            }
         });
-
-        if (error) {
-            console.error('❌ Error fetching chat history:', error);
-        } else {
-            console.log('✅ Chat history loaded:', data);
-            const loadedReadings = [];
-            let lastUserQuestion = '';
-
-            data.forEach(msg => {
-                if (msg.role === 'user') {
-                    loadedReadings.push({
-                        id: msg.message_id,
-                        type: 'message',
-                        content: msg.content,
-                        role: msg.role,
-                        timestamp: msg.created_at
-                    });
-                    lastUserQuestion = msg.content;
-                } else if (msg.role === 'assistant') {
-                    if (msg.cards && msg.cards.length > 0) {
-                        loadedReadings.push({
-                            id: msg.message_id,
-                            type: 'tarotReading',
-                            question: lastUserQuestion,
-                            drawnCards: msg.cards,
-                            interpretation: msg.content,
-                            isLoading: false,
-                            timestamp: msg.created_at
-                        });
-                    } else {
-                        loadedReadings.push({
-                            id: msg.message_id,
-                            type: 'message',
-                            content: msg.content,
-                            role: 'assistant',
-                            timestamp: msg.created_at
-                        });
-                    }
-                    lastUserQuestion = '';
-                }
-            });
-            readings.value = loadedReadings;
-        }
+        readings.value = loadedReadings;
     } catch (err) {
         console.error('❌ Exception while loading chat history:', err);
     } finally {
@@ -97,55 +71,35 @@ const loadChatHistory = async (chatId) => {
     }
 };
 
-// --- Chat Navigation and Initialization ---
-const currentChatId = computed(() => route.params.chatId);
-
-const initializeChatId = () => {
-    if (!currentChatId.value) {
-        const newChatId = generateUUID();
-        console.log('💬 Creating new chat:', newChatId);
-        router.replace({ name: 'chat', params: { chatId: newChatId } });
-        return newChatId;
-    }
-    console.log('💬 Loading existing chat:', currentChatId.value);
-    return currentChatId.value;
-};
-
+// --- Chat Navigation ---
 const createNewChat = () => {
-    const newChatId = generateUUID();
-    console.log('💬 Creating new chat via button:', newChatId);
-    readings.value = [];
-    router.push({ name: 'chat', params: { chatId: newChatId } });
+    console.log('💬 Navigating to create a new chat...');
+    router.push({ name: 'new-chat' });
 };
 
 // --- Main Logic: Handling Question Submission ---
 const handleQuestionSubmitted = async (question) => {
-    const chatId = currentChatId.value || initializeChatId();
+    const chatId = route.params.chatId;
     const userId = authStore.user?.id;
 
-    if (!userId || isLoading.value) return;
+    if (!chatId || !userId || isLoading.value) return;
 
     isLoading.value = true;
 
-    // 1. Add user message to UI
     const userMessage = {
-        id: generateUUID(),
+        id: `local-${Date.now()}`,
         type: 'message',
         content: question,
         role: 'user',
-        timestamp: new Date().toISOString() // <-- FIX
+        timestamp: new Date().toISOString()
     };
     readings.value.push(userMessage);
     scrollToBottom();
 
     try {
-        // 2. Ensure chat exists in DB before saving messages
         await ensureChatExistsInDb(chatId, userId, question);
-
-        // 3. Save user message to DB
         await saveMessageToDb({ chatId, userId, role: 'user', content: question });
 
-        // 4. Prepare context for the backend agents
         const historyForAgents = readings.value.slice(0, -1).map(r => ({
             role: r.role,
             content: r.role === 'user' ? r.content : r.interpretation || r.content,
@@ -153,18 +107,11 @@ const handleQuestionSubmitted = async (question) => {
         
         const personalCtx = await generatePersonalContext();
 
-        // 5. Call the new main chat endpoint
         const API_URL = import.meta.env.VITE_API_URL;
         const response = await fetch(`${API_URL}/api/chat/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                question: question,
-                history: historyForAgents,
-                personalContext: personalCtx.context,
-                userId: userId,
-                chatId: chatId,
-            }),
+            body: JSON.stringify({ question, history: historyForAgents, personalContext: personalCtx.context, userId, chatId }),
         });
 
         if (!response.ok) {
@@ -173,50 +120,20 @@ const handleQuestionSubmitted = async (question) => {
         }
 
         const result = await response.json();
-        console.log('✅ Backend response:', result);
 
-        // 6. Process backend response
         let assistantMessage;
         if (result.type === 'tarot_reading') {
-            assistantMessage = {
-                id: generateUUID(),
-                type: 'tarotReading',
-                question: question,
-                drawnCards: result.cards.map(c => ({ ...c, revealed: true, isFlipped: true })),
-                interpretation: result.interpretation,
-                isLoading: false,
-                role: 'assistant',
-                timestamp: new Date().toISOString() // <-- FIX
-            };
-        } else { // type: 'message'
-            assistantMessage = {
-                id: generateUUID(),
-                type: 'message',
-                content: result.text,
-                role: 'assistant',
-                timestamp: new Date().toISOString() // <-- FIX
-            };
+            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: result.cards.map(c => ({ ...c, revealed: true, isFlipped: true })), interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
+        } else {
+            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: result.text, role: 'assistant', timestamp: new Date().toISOString() };
         }
         readings.value.push(assistantMessage);
 
-        // 7. Save assistant message to DB
-        await saveMessageToDb({
-            chatId,
-            userId,
-            role: 'assistant',
-            content: assistantMessage.interpretation || assistantMessage.content,
-            cards: assistantMessage.drawnCards || null,
-        });
+        await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.interpretation || assistantMessage.content, cards: assistantMessage.drawnCards || null });
 
     } catch (error) {
         console.error('❌ Error in handleQuestionSubmitted:', error);
-        readings.value.push({
-            id: generateUUID(),
-            type: 'message',
-            content: `Lo siento, ha ocurrido un error: ${error.message}`,
-            role: 'assistant',
-            isError: true,
-        });
+        readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
     } finally {
         isLoading.value = false;
         scrollToBottom();
@@ -226,62 +143,48 @@ const handleQuestionSubmitted = async (question) => {
 // --- Database and Utility Functions ---
 const ensureChatExistsInDb = async (chatId, userId, initialQuestion) => {
     try {
-        console.log(`🔗 Ensuring chat ${chatId} exists in DB...`);
-        const { error } = await supabase
-            .from('chats')
-            .upsert(
-                { id: chatId, user_id: userId, title: initialQuestion.substring(0, 50) },
-                { onConflict: 'id' }
-            );
-        if (error) throw error;
-        console.log(`✅ Chat ${chatId} is ensured.`);
+        const { count } = await supabase.from('chats').select('id', { count: 'exact', head: true }).eq('id', chatId);
+        if (count === 0) {
+            console.log(`🔗 Chat ${chatId} does not exist. Creating...`);
+            const { error } = await supabase.from('chats').insert({ id: chatId, user_id: userId, title: initialQuestion.substring(0, 50) });
+            if (error) throw error;
+            console.log(`✅ Chat ${chatId} created.`);
+        }
     } catch (dbError) {
         console.error('❌ DB Error ensuring chat exists:', dbError);
-        throw dbError; // Re-throw to stop the process if chat can't be created
+        throw dbError;
     }
-};const saveMessageToDb = async ({ chatId, userId, role, content, cards = null }) => {
+};
+
+const saveMessageToDb = async ({ chatId, userId, role, content, cards = null }) => {
     try {
         console.log(`💾 Saving message to DB... (Role: ${role})`);
-        const { error } = await supabase.rpc('save_message', {
-            p_chat_id: chatId,
-            p_user_id: userId,
-            p_role: role,
-            p_content: content,
-            p_cards: cards,
-        });
+        const { error } = await supabase.rpc('save_message', { p_chat_id: chatId, p_user_id: userId, p_role: role, p_content: content, p_cards: cards });
         if (error) throw error;
         console.log('✅ Message saved successfully.');
     } catch (dbError) {
         console.error('❌ DB Error saving message:', dbError);
-        // Don't re-throw, just log the error. The user will see a generic error message.
     }
 };
 
 const scrollToBottom = () => {
     nextTick(() => {
-        if (chatHistory.value) {
-            chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
-        }
+        if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
     });
 };
 
 // --- Lifecycle and Watchers ---
 watch(() => route.params.chatId, (newChatId) => {
-    console.log(`🔄 Chat ID watcher triggered. New ID: ${newChatId}`);
-    if (newChatId) {
-        // A chat ID is present in the URL, load its history.
+    if (newChatId && typeof newChatId === 'string') {
+        console.log(`▶️ Chat ID is present: ${newChatId}. Loading history.`);
         loadChatHistory(newChatId);
     } else {
-        // No chat ID in the URL, create a new one and redirect.
-        const newChatId = generateUUID();
-        console.log('💬 No chat ID in URL, creating new chat:', newChatId);
-        router.replace({ name: 'chat', params: { chatId: newChatId } });
+        console.log('❔ No chat ID in route yet, router will redirect.');
     }
-}, { immediate: true }); // immediate: true ensures this runs on component mount.
+}, { immediate: true });
 
 watch(readings, scrollToBottom, { deep: true });
 
-// Load personalized greeting on mount, it's independent of the chat logic.
 onMounted(async () => {
     try {
         personalizedGreeting.value = await getPersonalizedGreeting();
