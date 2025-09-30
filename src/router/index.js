@@ -138,19 +138,6 @@ const router = createRouter({
       component: Debug
     },
     {
-      path: '/colors',
-      name: 'colors',
-      component: () => import('../views/Colors.vue'),
-      beforeEnter: async (to, from, next) => {
-        const auth = useAuthStore();
-        if (!auth.isInitialized) await waitForAuthInitialization();
-        if (!auth.isLoggedIn || auth.needsRegistration) {
-          next({ name: 'landing' });
-        } else {
-          next();
-        }
-      }
-    },
     {
       path: '/shared/:shareId',
       name: 'shared-chat',
