@@ -45,8 +45,7 @@ const loadChatHistory = async (chatId) => {
     try {
         console.log(`💬 Loading chat history for chat ID: ${chatId}`);
         const { data, error } = await supabase.rpc('get_chat_history', {
-            p_chat_id: chatId,
-            p_user_id: authStore.user.id
+            p_chat_id: chatId
         });
 
         if (error) {
