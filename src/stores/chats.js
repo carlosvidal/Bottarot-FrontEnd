@@ -1,27 +1,16 @@
-import { defineStore, storeToRefs } from 'pinia';
-import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 import { supabase } from '../lib/supabase';
 
 export const useChatStore = defineStore('chats', () => {
   const chatList = ref([]);
   const isLoading = ref(false);
-  let authStore = null;
 
-  // Lazy load auth store to avoid circular dependency
-  const getAuthStore = async () => {
-    if (!authStore) {
-      const { useAuthStore } = await import('./auth');
-      authStore = useAuthStore();
-    }
-    return authStore;
-  };
-
-  const fetchChatList = async () => {
-    const auth = await getAuthStore();
-    if (!auth.user) return;
+  const fetchChatList = async (userId) => {
+    if (!userId) return;
     isLoading.value = true;
     try {
-      const { data, error } = await supabase.rpc('get_chat_list', { p_user_id: auth.user.id });
+      const { data, error } = await supabase.rpc('get_chat_list', { p_user_id: userId });
       if (error) throw error;
       chatList.value = data || [];
     } catch (error) {
@@ -31,9 +20,8 @@ export const useChatStore = defineStore('chats', () => {
     }
   };
 
-  const deleteChat = async (chatId) => {
-    const auth = await getAuthStore();
-    if (!auth.user) throw new Error('User not authenticated');
+  const deleteChat = async (chatId, userId) => {
+    if (!userId) throw new Error('User not authenticated');
 
     // Optimistically remove from UI
     const index = chatList.value.findIndex(c => c.id === chatId);
@@ -43,7 +31,7 @@ export const useChatStore = defineStore('chats', () => {
     try {
       const { error } = await supabase.rpc('delete_chat', {
         p_chat_id: chatId,
-        p_user_id: auth.user.id
+        p_user_id: userId
       });
       if (error) {
         // If the delete fails, revert the change in the UI
@@ -57,9 +45,8 @@ export const useChatStore = defineStore('chats', () => {
     }
   };
 
-  const renameChat = async (chatId, newTitle) => {
-    const auth = await getAuthStore();
-    if (!auth.user) throw new Error('User not authenticated');
+  const renameChat = async (chatId, newTitle, userId) => {
+    if (!userId) throw new Error('User not authenticated');
     if (!newTitle || !newTitle.trim()) return;
 
     const index = chatList.value.findIndex(c => c.id === chatId);
@@ -72,7 +59,7 @@ export const useChatStore = defineStore('chats', () => {
     try {
       const { error } = await supabase.rpc('update_chat_title', {
         p_chat_id: chatId,
-        p_user_id: auth.user.id,
+        p_user_id: userId,
         p_new_title: newTitle
       });
       if (error) {
@@ -86,9 +73,8 @@ export const useChatStore = defineStore('chats', () => {
     }
   };
 
-  const toggleFavorite = async (chatId) => {
-    const auth = await getAuthStore();
-    if (!auth.user) throw new Error('User not authenticated');
+  const toggleFavorite = async (chatId, userId) => {
+    if (!userId) throw new Error('User not authenticated');
 
     const chat = chatList.value.find(c => c.id === chatId);
     if (!chat) return;
@@ -107,7 +93,7 @@ export const useChatStore = defineStore('chats', () => {
     try {
       const { error } = await supabase.rpc('toggle_chat_favorite', {
         p_chat_id: chatId,
-        p_user_id: auth.user.id
+        p_user_id: userId
       });
       if (error) {
         // Revert on error
