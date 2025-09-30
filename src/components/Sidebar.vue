@@ -83,6 +83,7 @@ const previousChats = [
             <nav class="chat-history">
                 <h3 class="history-title">Chats Anteriores</h3>
                 <ul>
+                    <li><router-link to="/colors" class="history-link">[DEBUG] CRUD de Colores</router-link></li>
                     <li v-for="chat in previousChats" :key="chat.id">
                         <a href="#" class="history-link">{{ chat.title }}</a>
                     </li>
