@@ -24,13 +24,11 @@ function generateUUID() {
 async function waitForAuthInitialization() {
   const auth = useAuthStore();
   if (auth.isInitialized) return true;
-  console.log('🔄 Waiting for auth initialization...');
   const maxWait = 5000;
   const startTime = Date.now();
   while (!auth.isInitialized && (Date.now() - startTime) < maxWait) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
-  console.log('✅ Auth initialization completed:', auth.isInitialized);
   return auth.isInitialized;
 }
 
