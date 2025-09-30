@@ -12,7 +12,7 @@ import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
 import QuestionForm from '../components/QuestionForm.vue';
 
-// --- Core Refs ---
+// --- 1. Core State and Store Initialization ---
 const readings = ref([]);
 const chatHistory = ref(null);
 const isLoading = ref(false);
@@ -25,105 +25,9 @@ const router = useRouter();
 const auth = useAuthStore();
 const chatStore = useChatStore();
 
-// --- Main Logic: Handling Question Submission ---
-const handleQuestionSubmitted = async (question) => {
-    const chatId = route.params.chatId;
-    const userId = auth.user?.id;
-    if (!chatId || !userId || isLoading.value) return;
+// --- 2. Function Declarations ---
+const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
 
-    isLoading.value = true;
-
-    // 1. Add user message to UI and save to DB
-    const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
-    readings.value.push(userMessage);
-    scrollToBottom();
-    await ensureChatExistsInDb(chatId, userId, question);
-    await saveMessageToDb({ chatId, userId, role: 'user', content: question });
-
-    try {
-        // 2. Call DECIDER endpoint
-        const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
-        const API_URL = import.meta.env.VITE_API_URL;
-        const decideResponse = await fetch(`${API_URL}/api/chat/decide`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, history: historyForAgents, userId, chatId }),
-        });
-        if (!decideResponse.ok) throw new Error('El Agente Decisor ha fallado.');
-        const decisionResult = await decideResponse.json();
-
-        // 3. Handle DECIDER response
-        if (decisionResult.type === 'message') {
-            // Simple text response (inadequate, follow-up)
-            const assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: decisionResult.text, role: 'assistant', timestamp: new Date().toISOString() };
-            readings.value.push(assistantMessage);
-            await saveMessageToDb({ chatId, userId, role: 'assistant', content: decisionResult.text });
-
-        } else if (decisionResult.type === 'cards_drawn') {
-            // New tarot reading required
-            if (decisionResult.title) {
-                // If a title was generated, refresh the sidebar list
-                setTimeout(() => chatStore.fetchChatList(), 1000);
-            }
-
-            // Create the reading object with cards hidden
-            const tarotReading = {
-                id: `local-${Date.now()}-ai`,
-                type: 'tarotReading',
-                question,
-                drawnCards: decisionResult.cards.map(c => ({ ...c, isFlipped: false })),
-                interpretation: '',
-                isLoading: true, // Loading state for interpretation
-                role: 'assistant',
-                timestamp: new Date().toISOString()
-            };
-            readings.value.push(tarotReading);
-            scrollToBottom();
-
-            // Animate card flipping
-            await nextTick();
-            for (let i = 0; i < tarotReading.drawnCards.length; i++) {
-                await new Promise(resolve => setTimeout(resolve, 400));
-                tarotReading.drawnCards[i].isFlipped = true;
-            }
-
-            // 4. Call INTERPRETER endpoint and stream response
-            const personalCtx = await generatePersonalContext();
-            const interpretResponse = await fetch(`${API_URL}/api/chat/interpret`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question, history: historyForAgents, personalContext: personalCtx.context, cards: decisionResult.cards, chatId })
-            });
-            if (!interpretResponse.ok) throw new Error('El Agente Intérprete ha fallado.');
-
-            const reader = interpretResponse.body.getReader();
-            const decoder = new TextDecoder();
-            let finalInterpretation = '';
-
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                finalInterpretation += chunk;
-                tarotReading.interpretation = finalInterpretation; // Update interpretation reactively
-                scrollToBottom();
-            }
-            tarotReading.isLoading = false;
-
-            // 5. Save final interpretation to DB
-            await saveMessageToDb({ chatId, userId, role: 'assistant', content: finalInterpretation, cards: decisionResult.cards });
-        }
-
-    } catch (error) {
-        console.error('❌ Error in handleQuestionSubmitted:', error);
-        readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
-    } finally {
-        isLoading.value = false;
-        scrollToBottom();
-    }
-};
-
-// --- Lifecycle, History, and Utility Functions (mostly unchanged) ---
 const loadChatHistory = async (chatId) => {
     if (!chatId || !auth.user?.id) { readings.value = []; return; }
     isLoadingHistory.value = true;
@@ -149,7 +53,9 @@ const loadChatHistory = async (chatId) => {
         isLoadingHistory.value = false;
     }
 };
+
 const createNewChat = () => router.push({ name: 'new-chat' });
+
 const ensureChatExistsInDb = async (chatId, userId, initialQuestion) => {
     try {
         const { count } = await supabase.from('chats').select('id', { count: 'exact', head: true }).eq('id', chatId);
@@ -158,15 +64,96 @@ const ensureChatExistsInDb = async (chatId, userId, initialQuestion) => {
         }
     } catch (dbError) { console.error('❌ DB Error ensuring chat exists:', dbError); throw dbError; }
 };
+
 const saveMessageToDb = async ({ chatId, userId, role, content, cards = null }) => {
     try {
         await supabase.rpc('save_message', { p_chat_id: chatId, p_user_id: userId, p_role: role, p_content: content, p_cards: cards });
     } catch (dbError) { console.error('❌ DB Error saving message:', dbError); }
 };
-const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
-watch(() => route.params.chatId, (newChatId) => { if (newChatId && typeof newChatId === 'string') loadChatHistory(newChatId); }, { immediate: true });
+
+const handleQuestionSubmitted = async (question) => {
+    const chatId = route.params.chatId;
+    const userId = auth.user?.id;
+    if (!chatId || !userId || isLoading.value) return;
+
+    isLoading.value = true;
+    const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
+    readings.value.push(userMessage);
+    scrollToBottom();
+    await ensureChatExistsInDb(chatId, userId, question);
+    await saveMessageToDb({ chatId, userId, role: 'user', content: question });
+
+    try {
+        const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
+        const API_URL = import.meta.env.VITE_API_URL;
+        const decideResponse = await fetch(`${API_URL}/api/chat/decide`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, userId, chatId }) });
+        if (!decideResponse.ok) throw new Error('El Agente Decisor ha fallado.');
+        const decisionResult = await decideResponse.json();
+
+        if (decisionResult.type === 'message') {
+            const assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: decisionResult.text, role: 'assistant', timestamp: new Date().toISOString() };
+            readings.value.push(assistantMessage);
+            await saveMessageToDb({ chatId, userId, role: 'assistant', content: decisionResult.text });
+        } else if (decisionResult.type === 'cards_drawn') {
+            if (decisionResult.title) {
+                setTimeout(() => chatStore.fetchChatList(), 1000);
+            }
+            const tarotReading = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: decisionResult.cards.map(c => ({ ...c, isFlipped: false })), interpretation: '', isLoading: true, role: 'assistant', timestamp: new Date().toISOString() };
+            readings.value.push(tarotReading);
+            scrollToBottom();
+            await nextTick();
+            for (let i = 0; i < tarotReading.drawnCards.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 400));
+                tarotReading.drawnCards[i].isFlipped = true;
+            }
+
+            const personalCtx = await generatePersonalContext();
+            const interpretResponse = await fetch(`${API_URL}/api/chat/interpret`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, personalContext: personalCtx.context, cards: decisionResult.cards, chatId }) });
+            if (!interpretResponse.ok) throw new Error('El Agente Intérprete ha fallado.');
+
+            const reader = interpretResponse.body.getReader();
+            const decoder = new TextDecoder();
+            let finalInterpretation = '';
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                finalInterpretation += chunk;
+                tarotReading.interpretation = finalInterpretation;
+                scrollToBottom();
+            }
+            tarotReading.isLoading = false;
+            await saveMessageToDb({ chatId, userId, role: 'assistant', content: finalInterpretation, cards: decisionResult.cards });
+        }
+    } catch (error) {
+        console.error('❌ Error in handleQuestionSubmitted:', error);
+        readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
+    } finally {
+        isLoading.value = false;
+        scrollToBottom();
+    }
+};
+
+// --- 3. Lifecycle Hooks and Watchers ---
+onMounted(async () => {
+    try {
+        personalizedGreeting.value = await getPersonalizedGreeting();
+    } catch (e) {
+        console.warn('Could not load personalized greeting.');
+    }
+});
+
+watch(() => route.params.chatId, (newChatId) => {
+    if (newChatId && typeof newChatId === 'string') {
+        console.log(`▶️ Chat ID is present: ${newChatId}. Loading history.`);
+        loadChatHistory(newChatId);
+    } else {
+        console.log('❔ No chat ID in route yet, router will handle redirection.');
+    }
+}, { immediate: true });
+
 watch(readings, scrollToBottom, { deep: true });
-onMounted(async () => { try { personalizedGreeting.value = await getPersonalizedGreeting(); } catch (e) { console.warn('Could not load personalized greeting.'); } });
+
 </script>
 
 <template>
