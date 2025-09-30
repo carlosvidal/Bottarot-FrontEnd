@@ -266,36 +266,29 @@ const scrollToBottom = () => {
 };
 
 // --- Lifecycle and Watchers ---
-onMounted(async () => {
-    const chatId = initializeChatId();
-    
-    // Load greeting and history concurrently for speed
-    await Promise.all([
-        getPersonalizedGreeting().then(g => personalizedGreeting.value = g).catch(e => console.warn('Could not load personalized greeting.')),
-        loadChatHistory(chatId)
-    ]);
-
-    // Handle initial question from query parameter after setup
-    const initialQuestion = route.query.q;
-    if (initialQuestion && typeof initialQuestion === 'string') {
-        handleQuestionSubmitted(initialQuestion);
-        // Clean up query parameter but keep chat ID
-        router.replace({
-            name: 'chat',
-            params: { chatId: chatId },
-            query: {}
-        });
+watch(() => route.params.chatId, (newChatId) => {
+    console.log(`🔄 Chat ID watcher triggered. New ID: ${newChatId}`);
+    if (newChatId) {
+        // A chat ID is present in the URL, load its history.
+        loadChatHistory(newChatId);
+    } else {
+        // No chat ID in the URL, create a new one and redirect.
+        const newChatId = generateUUID();
+        console.log('💬 No chat ID in URL, creating new chat:', newChatId);
+        router.replace({ name: 'chat', params: { chatId: newChatId } });
     }
-});
-
-watch(() => route.params.chatId, async (newChatId, oldChatId) => {
-    if (newChatId && newChatId !== oldChatId) {
-        console.log('🔄 Chat changed, loading new history for', newChatId);
-        await loadChatHistory(newChatId);
-    }
-});
+}, { immediate: true }); // immediate: true ensures this runs on component mount.
 
 watch(readings, scrollToBottom, { deep: true });
+
+// Load personalized greeting on mount, it's independent of the chat logic.
+onMounted(async () => {
+    try {
+        personalizedGreeting.value = await getPersonalizedGreeting();
+    } catch (e) {
+        console.warn('Could not load personalized greeting.');
+    }
+});
 
 // --- Placeholder Functions ---
 const addToFavorites = () => console.log('⭐ Favorites - coming soon!');
