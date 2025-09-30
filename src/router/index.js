@@ -138,7 +138,6 @@ const router = createRouter({
       component: Debug
     },
     {
-    {
       path: '/shared/:shareId',
       name: 'shared-chat',
       component: () => import('../views/SharedChat.vue'),
