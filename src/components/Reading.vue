@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue';
-import { marked } from 'marked'; // Import marked
+import { computed, ref } from 'vue';
+import { marked } from 'marked';
 
 const props = defineProps({
     cards: {
@@ -22,8 +22,66 @@ const cardTitles = ['Pasado', 'Presente', 'Futuro'];
 
 const formattedInterpretation = computed(() => {
     if (!props.interpretation) return '';
-    return marked.parse(props.interpretation); // Use marked.parse for Markdown
+    return marked.parse(props.interpretation);
 });
+
+// TTS functionality
+const audio = ref(null);
+const audioState = ref('idle'); // idle, loading, playing, error
+
+const playAudio = async () => {
+    if (!props.interpretation) return;
+
+    if (audioState.value === 'playing') {
+        audio.value.pause();
+        audio.value.currentTime = 0;
+        audioState.value = 'idle';
+        return;
+    }
+
+    audioState.value = 'loading';
+    try {
+        const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
+        const VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': ELEVENLABS_API_KEY
+            },
+            body: JSON.stringify({
+                text: props.interpretation,
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('ElevenLabs error:', errorData);
+            throw new Error('Failed to generate speech.');
+        }
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        audio.value = new Audio(audioUrl);
+
+        audio.value.onplaying = () => audioState.value = 'playing';
+        audio.value.onended = () => audioState.value = 'idle';
+        audio.value.onerror = () => audioState.value = 'error';
+
+        audio.value.play();
+
+    } catch (error) {
+        console.error('Error playing TTS audio:', error);
+        audioState.value = 'error';
+    }
+};
 
 </script>
 
@@ -55,8 +113,16 @@ const formattedInterpretation = computed(() => {
         <div v-if="isLoading && !interpretation" class="interpretation-loading">
             El oráculo está meditando sobre tu destino...
         </div>
-        
-        <div v-if="interpretation" class="interpretation-container" v-html="formattedInterpretation">
+
+        <div v-if="interpretation" class="interpretation-wrapper">
+            <div class="interpretation-header">
+                <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
+                    <span v-if="audioState === 'idle' || audioState === 'error'">🔊 Escuchar</span>
+                    <span v-if="audioState === 'loading'">⏳ Cargando...</span>
+                    <span v-if="audioState === 'playing'">⏸️ Pausar</span>
+                </button>
+            </div>
+            <div class="interpretation-container" v-html="formattedInterpretation"></div>
         </div>
     </div>
 </template>
@@ -136,8 +202,41 @@ const formattedInterpretation = computed(() => {
 
 .interpretation-error { color: #ff6b6b; }
 
-.interpretation-container {
+.interpretation-wrapper {
     margin: 20px auto 0;
+}
+
+.interpretation-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.tts-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tts-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.tts-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.interpretation-container {
     max-width: 100%;
     background: linear-gradient(145deg, #2a2a3e, #1f1f32);
     border-radius: 15px;
