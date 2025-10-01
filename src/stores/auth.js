@@ -112,8 +112,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('👤 User signed in, checking profile...')
 
-        // Perform server warmup as soon as user logs in
-        performWarmup()
+        // Temporarily disabled warmup to avoid ElevenLabs rate limiting
+        // performWarmup()
 
         try {
           // Run profile check and subscription loading in parallel with timeouts
