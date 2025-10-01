@@ -45,15 +45,31 @@ const playAudio = async () => {
 
     audioState.value = 'loading';
     try {
-        const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/api/tts`, {
+        // Call ElevenLabs directly from browser to avoid Render.com IP issues
+        const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
+        const VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: props.message.content })
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': ELEVENLABS_API_KEY
+            },
+            body: JSON.stringify({
+                text: props.message.content,
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            })
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch audio from server.');
+            const errorData = await response.json();
+            console.error('ElevenLabs error:', errorData);
+            throw new Error('Failed to generate speech.');
         }
 
         const blob = await response.blob();
