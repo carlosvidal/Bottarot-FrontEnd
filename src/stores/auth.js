@@ -52,10 +52,36 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('💾 Stored session in localStorage:', !!storedSession)
 
       const { data: { session }, error } = await supabase.auth.getSession()
+
       if (error) {
         console.error('❌ Error getting session:', error)
-        // Clear potentially corrupted session
-        await supabase.auth.signOut()
+
+        // Check if it's a network/connection error
+        const isNetworkError = error.message?.includes('fetch') ||
+                              error.message?.includes('network') ||
+                              error.message?.includes('Failed to fetch') ||
+                              error.status === 0
+
+        if (isNetworkError) {
+          console.warn('🌐 Network error detected - Supabase is not reachable. Clearing local session.')
+          // Clear all Supabase auth data from localStorage
+          const keysToRemove = []
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && key.startsWith('supabase.auth')) {
+              keysToRemove.push(key)
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key))
+          console.log('🧹 Cleared', keysToRemove.length, 'Supabase auth keys from localStorage')
+        } else {
+          // For other errors, try to sign out gracefully
+          try {
+            await supabase.auth.signOut()
+          } catch (signOutError) {
+            console.warn('⚠️ Could not sign out:', signOutError)
+          }
+        }
       }
 
       user.value = session?.user || null
@@ -72,6 +98,20 @@ export const useAuthStore = defineStore('auth', () => {
       isInitialized.value = true
     } catch (error) {
       console.error('❌ Error during auth initialization:', error)
+
+      // If there's a network error, clear localStorage to prevent retry loops
+      if (error.message?.includes('fetch') || error.message?.includes('Failed to fetch')) {
+        console.warn('🌐 Network error during initialization. Clearing Supabase auth data.')
+        const keysToRemove = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('supabase.auth')) {
+            keysToRemove.push(key)
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key))
+      }
+
       // Mark as initialized even if there's an error to prevent infinite loops
       isInitialized.value = true
     } finally {
@@ -107,6 +147,21 @@ export const useAuthStore = defineStore('auth', () => {
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔔 Auth state change:', event, !!session?.user)
       user.value = session?.user || null
+
+      // Handle auth errors - clear session data
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('⚠️ Token refresh failed, session lost')
+        // Clear Supabase auth data from localStorage
+        const keysToRemove = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('supabase.auth')) {
+            keysToRemove.push(key)
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key))
+        return
+      }
 
       // If user just signed in and doesn't have profile data, they need to complete registration
       if (event === 'SIGNED_IN' && session?.user) {
