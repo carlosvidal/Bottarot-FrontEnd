@@ -104,9 +104,14 @@ const animateCards = async (cards) => {
 };
 
 const handleQuestionSubmitted = async (question) => {
+    console.log('🚀 handleQuestionSubmitted called with question:', question);
     const chatId = route.params.chatId;
     const userId = auth.user?.id;
-    if (!chatId || !userId || isLoading.value) return;
+    console.log('📍 chatId:', chatId, 'userId:', userId, 'isLoading:', isLoading.value);
+    if (!chatId || !userId || isLoading.value) {
+        console.log('⚠️ Returning early - chatId:', chatId, 'userId:', userId, 'isLoading:', isLoading.value);
+        return;
+    }
 
     isLoading.value = true;
     const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
