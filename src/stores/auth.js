@@ -170,19 +170,11 @@ export const useAuthStore = defineStore('auth', () => {
         // Temporarily disabled warmup to avoid ElevenLabs rate limiting
         // performWarmup()
 
-        try {
-          // Run profile check and subscription loading in parallel with timeouts
-          const profilePromise = checkUserProfile(session.user)
-          const subscriptionPromise = loadUserSubscription()
-
-          // Wait for both with a reasonable timeout
-          await Promise.race([
-            Promise.all([profilePromise, subscriptionPromise]),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Profile loading timeout')), 15000)
-            )
-          ])
-
+        // Run profile check and subscription loading in background WITHOUT blocking
+        Promise.all([
+          checkUserProfile(session.user),
+          loadUserSubscription()
+        ]).then(() => {
           console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
           console.log('🔍 Auth state after profile check:', {
             isLoggedIn: isLoggedIn.value,
@@ -190,11 +182,11 @@ export const useAuthStore = defineStore('auth', () => {
             needsRegistration: needsRegistration.value,
             user: !!user.value
           })
-        } catch (error) {
-          console.error('⚠️ Profile loading timed out or failed:', error)
+        }).catch(error => {
+          console.error('⚠️ Profile loading failed:', error)
           // Continue with defaults to not block auth initialization
           needsRegistration.value = false
-        }
+        })
       }
 
       // Mark as initialized after any auth state change
@@ -391,7 +383,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Add timeout to prevent hanging
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
       const response = await fetch(`${API_URL}/api/user/subscription/${user.value.id}`, {
         signal: controller.signal
@@ -410,7 +402,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        console.error('⏰ Subscription loading timed out after 10 seconds')
+        console.error('⏰ Subscription loading timed out after 5 seconds')
       } else {
         console.error('❌ Exception loading user subscription:', error)
       }
