@@ -104,9 +104,14 @@ const animateCards = async (cards) => {
 };
 
 const handleQuestionSubmitted = async (question) => {
+    console.log('🚀 handleQuestionSubmitted called with question:', question);
     const chatId = route.params.chatId;
     const userId = auth.user?.id;
-    if (!chatId || !userId || isLoading.value) return;
+    console.log('📍 chatId:', chatId, 'userId:', userId, 'isLoading:', isLoading.value);
+    if (!chatId || !userId || isLoading.value) {
+        console.log('⚠️ Returning early - chatId:', chatId, 'userId:', userId, 'isLoading:', isLoading.value);
+        return;
+    }
 
     isLoading.value = true;
     const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
@@ -139,61 +144,79 @@ const handleQuestionSubmitted = async (question) => {
         const decoder = new TextDecoder();
         let buffer = '';
 
+        console.log('🔄 Starting SSE stream reading...');
+
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+                console.log('✅ Stream finished');
+                break;
+            }
 
             buffer += decoder.decode(value, { stream: true });
+            console.log('📦 Buffer:', buffer);
             const events = buffer.split('\n\n');
             buffer = events.pop();
 
             for (const event of events) {
                 if (!event.trim()) continue;
 
-                const lines = event.split('\n');
-                const eventType = lines[0].replace('event: ', '');
-                const data = JSON.parse(lines[1].replace('data: ', ''));
+                console.log('📨 Raw event:', event);
 
-                // Manejar evento de cartas
-                if (eventType === 'cards') {
-                    receivedCards = data.cards;
+                try {
+                    const lines = event.split('\n');
+                    const eventType = lines[0].replace('event: ', '');
+                    const dataLine = lines[1].replace('data: ', '');
+                    const data = JSON.parse(dataLine);
 
-                    // Preparar cartas con propiedades de animación
-                    const preparedCards = prepareCardsForAnimation(receivedCards);
+                    console.log('🎯 Event type:', eventType, 'Data:', data);
 
-                    // Crear mensaje de lectura de tarot INMEDIATAMENTE
-                    assistantMessage = {
-                        id: `local-${Date.now()}-ai`,
-                        type: 'tarotReading',
-                        question,
-                        drawnCards: preparedCards,
-                        interpretation: '',
-                        isLoading: true,
-                        role: 'assistant',
-                        timestamp: new Date().toISOString()
-                    };
+                    // Manejar evento de cartas
+                    if (eventType === 'cards') {
+                        console.log('🃏 Cards received:', data.cards);
+                        receivedCards = data.cards;
 
-                    readings.value.push(assistantMessage);
-                    scrollToBottom();
+                        // Preparar cartas con propiedades de animación
+                        const preparedCards = prepareCardsForAnimation(receivedCards);
 
-                    // Animar cartas inmediatamente
-                    animateCards(preparedCards);
-                }
+                        // Crear mensaje de lectura de tarot INMEDIATAMENTE
+                        assistantMessage = {
+                            id: `local-${Date.now()}-ai`,
+                            type: 'tarotReading',
+                            question,
+                            drawnCards: preparedCards,
+                            interpretation: '',
+                            isLoading: true,
+                            role: 'assistant',
+                            timestamp: new Date().toISOString()
+                        };
 
-                // Manejar evento de interpretación
-                if (eventType === 'interpretation') {
-                    fullInterpretation += data.text;
-                    if (assistantMessage) {
-                        assistantMessage.interpretation = fullInterpretation;
-                        assistantMessage.isLoading = false;
+                        readings.value.push(assistantMessage);
+                        scrollToBottom();
+
+                        // Animar cartas inmediatamente
+                        animateCards(preparedCards);
                     }
-                }
 
-                // Manejar evento de título
-                if (eventType === 'title') {
-                    setTimeout(() => {
-                        chatStore.fetchChatList();
-                    }, 1000);
+                    // Manejar evento de interpretación
+                    if (eventType === 'interpretation') {
+                        console.log('📖 Interpretation chunk:', data.text);
+                        fullInterpretation += data.text;
+                        if (assistantMessage) {
+                            assistantMessage.interpretation = fullInterpretation;
+                            assistantMessage.isLoading = false;
+                        }
+                    }
+
+                    // Manejar evento de título
+                    if (eventType === 'title') {
+                        console.log('📝 Title received:', data.title);
+                        setTimeout(() => {
+                            chatStore.fetchChatList();
+                        }, 1000);
+                    }
+                } catch (parseError) {
+                    console.error('❌ Error parsing event:', parseError, 'Event:', event);
                 }
             }
         }
