@@ -208,6 +208,8 @@ const handleQuestionSubmitted = async (question) => {
                         console.log('📖 Interpretation chunk:', data.text);
                         fullInterpretation += data.text;
                         if (assistantMessage) {
+                            // Esperar un poco para que las cartas terminen de animarse
+                            await delay(2500);
                             assistantMessage.interpretation = fullInterpretation;
                             assistantMessage.isLoading = false;
                         }
