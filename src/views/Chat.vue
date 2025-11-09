@@ -115,46 +115,110 @@ const handleQuestionSubmitted = async (question) => {
     await ensureChatExistsInDb(chatId, userId, question);
     await saveMessageToDb({ chatId, userId, role: 'user', content: question });
 
+    let assistantMessage = null;
+    let fullInterpretation = '';
+    let receivedCards = null;
+
     try {
         const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
         const API_URL = import.meta.env.VITE_API_URL;
-        const decideResponse = await fetch(`${API_URL}/api/chat/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history: historyForAgents, userId, chatId }) });
-        if (!decideResponse.ok) { const errorData = await decideResponse.json(); throw new Error(errorData.error || 'Error en la comunicación con el servidor.'); }
-        const result = await decideResponse.json();
 
-        let assistantMessage;
-        if (result.type === 'tarot_reading') {
-            // Preparar cartas con propiedades de animación
-            const preparedCards = prepareCardsForAnimation(result.cards);
+        const response = await fetch(`${API_URL}/api/chat/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question, history: historyForAgents, userId, chatId })
+        });
 
-            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: preparedCards, interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error en la comunicación con el servidor.');
+        }
 
-            // Agregar el mensaje a la vista ANTES de animar
-            readings.value.push(assistantMessage);
-            scrollToBottom();
+        // Streaming SSE
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-            // Ahora animar las cartas
-            await animateCards(preparedCards);
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-            if (result.title) {
-                // This is a fire-and-forget update to the sidebar.
-                setTimeout(() => {
-                    const chatStore = useChatStore();
-                    chatStore.fetchChatList();
-                }, 1000);
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop();
+
+            for (const event of events) {
+                if (!event.trim()) continue;
+
+                const lines = event.split('\n');
+                const eventType = lines[0].replace('event: ', '');
+                const data = JSON.parse(lines[1].replace('data: ', ''));
+
+                // Manejar evento de cartas
+                if (eventType === 'cards') {
+                    receivedCards = data.cards;
+
+                    // Preparar cartas con propiedades de animación
+                    const preparedCards = prepareCardsForAnimation(receivedCards);
+
+                    // Crear mensaje de lectura de tarot INMEDIATAMENTE
+                    assistantMessage = {
+                        id: `local-${Date.now()}-ai`,
+                        type: 'tarotReading',
+                        question,
+                        drawnCards: preparedCards,
+                        interpretation: '',
+                        isLoading: true,
+                        role: 'assistant',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    readings.value.push(assistantMessage);
+                    scrollToBottom();
+
+                    // Animar cartas inmediatamente
+                    animateCards(preparedCards);
+                }
+
+                // Manejar evento de interpretación
+                if (eventType === 'interpretation') {
+                    fullInterpretation += data.text;
+                    if (assistantMessage) {
+                        assistantMessage.interpretation = fullInterpretation;
+                        assistantMessage.isLoading = false;
+                    }
+                }
+
+                // Manejar evento de título
+                if (eventType === 'title') {
+                    setTimeout(() => {
+                        chatStore.fetchChatList();
+                    }, 1000);
+                }
             }
+        }
 
-            // Guardar en DB con las cartas originales (sin propiedades de animación)
-            await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.interpretation, cards: result.cards });
-        } else {
-            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: result.text, role: 'assistant', timestamp: new Date().toISOString() };
-            readings.value.push(assistantMessage);
-            await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.content, cards: null });
+        // Guardar en DB después de recibir todo
+        if (assistantMessage && receivedCards) {
+            await saveMessageToDb({
+                chatId,
+                userId,
+                role: 'assistant',
+                content: fullInterpretation,
+                cards: receivedCards
+            });
         }
 
     } catch (error) {
         console.error('❌ Error in handleQuestionSubmitted:', error);
-        readings.value.push({ id: `local-${Date.now()}-err`, type: 'message', content: `Lo siento, ha ocurrido un error: ${error.message}`, role: 'assistant', isError: true, timestamp: new Date().toISOString() });
+        readings.value.push({
+            id: `local-${Date.now()}-err`,
+            type: 'message',
+            content: `Lo siento, ha ocurrido un error: ${error.message}`,
+            role: 'assistant',
+            isError: true,
+            timestamp: new Date().toISOString()
+        });
     } finally {
         isLoading.value = false;
         scrollToBottom();
