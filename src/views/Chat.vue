@@ -197,9 +197,12 @@ const handleQuestionSubmitted = async (question) => {
                         };
 
                         readings.value.push(assistantMessage);
+
+                        // Forzar actualización del DOM antes de animar
+                        await nextTick();
                         scrollToBottom();
 
-                        // Animar cartas inmediatamente
+                        // Animar cartas inmediatamente (sin await para no bloquear)
                         animateCards(preparedCards);
                     }
 
@@ -208,10 +211,11 @@ const handleQuestionSubmitted = async (question) => {
                         console.log('📖 Interpretation chunk:', data.text);
                         fullInterpretation += data.text;
                         if (assistantMessage) {
-                            // Esperar un poco para que las cartas terminen de animarse
-                            await delay(2500);
-                            assistantMessage.interpretation = fullInterpretation;
-                            assistantMessage.isLoading = false;
+                            // Usar setTimeout para no bloquear el stream
+                            setTimeout(() => {
+                                assistantMessage.interpretation = fullInterpretation;
+                                assistantMessage.isLoading = false;
+                            }, 2500);
                         }
                     }
 
