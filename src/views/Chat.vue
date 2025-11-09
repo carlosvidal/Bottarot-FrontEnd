@@ -42,7 +42,16 @@ const loadChatHistory = async (chatId) => {
                 loadedReadings.push({ id: msg.message_id, type: 'message', content: msg.content, role: msg.role, timestamp: msg.created_at });
                 lastUserQuestion = msg.content;
             } else if (msg.role === 'assistant') {
-                loadedReadings.push({ id: msg.message_id, type: msg.cards?.length > 0 ? 'tarotReading' : 'message', question: lastUserQuestion, drawnCards: msg.cards, interpretation: msg.content, content: msg.content, isLoading: false, role: 'assistant', timestamp: msg.created_at });
+                // Si hay cartas, agregarles las propiedades de animación (ya reveladas)
+                let processedCards = msg.cards;
+                if (msg.cards && msg.cards.length > 0) {
+                    processedCards = msg.cards.map(card => ({
+                        ...card,
+                        revealed: true,
+                        isFlipped: true
+                    }));
+                }
+                loadedReadings.push({ id: msg.message_id, type: msg.cards?.length > 0 ? 'tarotReading' : 'message', question: lastUserQuestion, drawnCards: processedCards, interpretation: msg.content, content: msg.content, isLoading: false, role: 'assistant', timestamp: msg.created_at });
                 lastUserQuestion = '';
             }
         });
@@ -71,6 +80,29 @@ const saveMessageToDb = async ({ chatId, userId, role, content, cards = null }) 
     } catch (dbError) { console.error('❌ DB Error saving message:', dbError); }
 };
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const prepareCardsForAnimation = (cards) => {
+    if (!cards || cards.length === 0) return cards;
+    return cards.map(card => ({
+        ...card,
+        revealed: false,
+        isFlipped: false
+    }));
+};
+
+const animateCards = async (cards) => {
+    if (!cards || cards.length === 0) return;
+
+    // Revelar cartas secuencialmente
+    for (let i = 0; i < cards.length; i++) {
+        await delay(600);
+        cards[i].revealed = true;
+        await delay(200);
+        cards[i].isFlipped = true;
+    }
+};
+
 const handleQuestionSubmitted = async (question) => {
     const chatId = route.params.chatId;
     const userId = auth.user?.id;
@@ -92,19 +124,33 @@ const handleQuestionSubmitted = async (question) => {
 
         let assistantMessage;
         if (result.type === 'tarot_reading') {
-            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: result.cards, interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
-            if (result.title) { 
+            // Preparar cartas con propiedades de animación
+            const preparedCards = prepareCardsForAnimation(result.cards);
+
+            assistantMessage = { id: `local-${Date.now()}-ai`, type: 'tarotReading', question, drawnCards: preparedCards, interpretation: result.interpretation, isLoading: false, role: 'assistant', timestamp: new Date().toISOString() };
+
+            // Agregar el mensaje a la vista ANTES de animar
+            readings.value.push(assistantMessage);
+            scrollToBottom();
+
+            // Ahora animar las cartas
+            await animateCards(preparedCards);
+
+            if (result.title) {
                 // This is a fire-and-forget update to the sidebar.
                 setTimeout(() => {
                     const chatStore = useChatStore();
                     chatStore.fetchChatList();
                 }, 1000);
             }
+
+            // Guardar en DB con las cartas originales (sin propiedades de animación)
+            await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.interpretation, cards: result.cards });
         } else {
             assistantMessage = { id: `local-${Date.now()}-ai`, type: 'message', content: result.text, role: 'assistant', timestamp: new Date().toISOString() };
+            readings.value.push(assistantMessage);
+            await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.content, cards: null });
         }
-        readings.value.push(assistantMessage);
-        await saveMessageToDb({ chatId, userId, role: 'assistant', content: assistantMessage.interpretation || assistantMessage.content, cards: assistantMessage.drawnCards || null });
 
     } catch (error) {
         console.error('❌ Error in handleQuestionSubmitted:', error);
