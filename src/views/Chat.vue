@@ -139,12 +139,17 @@ const handleQuestionSubmitted = async (question) => {
             throw new Error(errorData.error || 'Error en la comunicación con el servidor.');
         }
 
-        // Streaming SSE
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+        // Check content type to determine if it's SSE or regular JSON
+        const contentType = response.headers.get('content-type');
+        console.log('📋 Content-Type:', contentType);
 
-        console.log('🔄 Starting SSE stream reading...');
+        if (contentType && contentType.includes('text/event-stream')) {
+            // SSE Streaming
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            console.log('🔄 Starting SSE stream reading...');
 
         while (true) {
             const { done, value } = await reader.read();
@@ -218,6 +223,52 @@ const handleQuestionSubmitted = async (question) => {
                 } catch (parseError) {
                     console.error('❌ Error parsing event:', parseError, 'Event:', event);
                 }
+            }
+        }
+        } else {
+            // Regular JSON response (fallback)
+            console.log('📄 Using regular JSON response');
+            const result = await response.json();
+            console.log('📥 JSON result:', result);
+
+            if (result.type === 'tarot_reading') {
+                // Preparar cartas con propiedades de animación
+                const preparedCards = prepareCardsForAnimation(result.cards);
+
+                assistantMessage = {
+                    id: `local-${Date.now()}-ai`,
+                    type: 'tarotReading',
+                    question,
+                    drawnCards: preparedCards,
+                    interpretation: result.interpretation,
+                    isLoading: false,
+                    role: 'assistant',
+                    timestamp: new Date().toISOString()
+                };
+
+                readings.value.push(assistantMessage);
+                scrollToBottom();
+
+                // Animar cartas
+                await animateCards(preparedCards);
+
+                receivedCards = result.cards;
+                fullInterpretation = result.interpretation;
+
+                if (result.title) {
+                    setTimeout(() => {
+                        chatStore.fetchChatList();
+                    }, 1000);
+                }
+            } else {
+                assistantMessage = {
+                    id: `local-${Date.now()}-ai`,
+                    type: 'message',
+                    content: result.text,
+                    role: 'assistant',
+                    timestamp: new Date().toISOString()
+                };
+                readings.value.push(assistantMessage);
             }
         }
 
