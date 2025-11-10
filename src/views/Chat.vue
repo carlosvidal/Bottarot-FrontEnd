@@ -123,6 +123,7 @@ const handleQuestionSubmitted = async (question) => {
     let assistantMessage = null;
     let fullInterpretation = '';
     let receivedCards = null;
+    let showInterpretationTimer = null;
 
     try {
         const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
@@ -197,12 +198,15 @@ const handleQuestionSubmitted = async (question) => {
                         };
 
                         readings.value.push(assistantMessage);
+                        console.log('✅ Cartas agregadas a readings.value, total items:', readings.value.length);
 
                         // Forzar actualización del DOM antes de animar
                         await nextTick();
+                        console.log('✅ nextTick completado, DOM actualizado');
                         scrollToBottom();
 
                         // Animar cartas inmediatamente (sin await para no bloquear)
+                        console.log('🎬 Iniciando animación de cartas...');
                         animateCards(preparedCards);
                     }
 
@@ -210,9 +214,9 @@ const handleQuestionSubmitted = async (question) => {
                     if (eventType === 'interpretation') {
                         console.log('📖 Interpretation chunk:', data.text);
                         fullInterpretation += data.text;
-                        if (assistantMessage) {
-                            // Usar setTimeout para no bloquear el stream
-                            setTimeout(() => {
+                        if (assistantMessage && !showInterpretationTimer) {
+                            // Solo programar el timer la primera vez que llega interpretación
+                            showInterpretationTimer = setTimeout(() => {
                                 assistantMessage.interpretation = fullInterpretation;
                                 assistantMessage.isLoading = false;
                             }, 2500);
