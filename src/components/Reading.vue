@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { marked } from 'marked';
 
 const props = defineProps({
@@ -16,6 +16,20 @@ const props = defineProps({
         default: false
     }
 });
+
+// Debug logging
+watch(() => props.cards, (newCards) => {
+    console.log('📋 Reading component received cards:', newCards);
+    if (newCards && newCards.length > 0) {
+        newCards.forEach((card, index) => {
+            console.log(`  Card ${index}:`, card.name, `revealed: ${card.revealed}, isFlipped: ${card.isFlipped}`);
+        });
+    }
+}, { immediate: true, deep: true});
+
+watch(() => props.interpretation, (newInterpretation) => {
+    console.log('📝 Reading component received interpretation:', newInterpretation ? 'Yes (' + newInterpretation.length + ' chars)' : 'No');
+}, { immediate: true });
 
 const cardBackImg = '/img/sm_RWSa-X-BA.webp';
 const cardTitles = ['Pasado', 'Presente', 'Futuro'];
