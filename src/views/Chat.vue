@@ -84,23 +84,31 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const prepareCardsForAnimation = (cards) => {
     if (!cards || cards.length === 0) return cards;
-    // Por ahora mostrar las cartas ya reveladas para que aparezcan inmediatamente
+    // Preparar cartas para animación
     return cards.map(card => ({
         ...card,
-        revealed: true,
-        isFlipped: true
+        revealed: false,
+        isFlipped: false
     }));
 };
 
-const animateCards = async (cards) => {
-    if (!cards || cards.length === 0) return;
+const animateCards = async (cardsArray, messageRef) => {
+    if (!cardsArray || cardsArray.length === 0) return;
 
     // Revelar cartas secuencialmente
-    for (let i = 0; i < cards.length; i++) {
+    for (let i = 0; i < cardsArray.length; i++) {
         await delay(600);
-        cards[i].revealed = true;
+        // Actualizar directamente la referencia del mensaje para forzar reactividad
+        cardsArray[i].revealed = true;
+        if (messageRef) {
+            messageRef.drawnCards = [...cardsArray]; // Forzar actualización
+        }
+
         await delay(200);
-        cards[i].isFlipped = true;
+        cardsArray[i].isFlipped = true;
+        if (messageRef) {
+            messageRef.drawnCards = [...cardsArray]; // Forzar actualización
+        }
     }
 };
 
@@ -203,7 +211,7 @@ const handleQuestionSubmitted = async (question) => {
                         console.log('🎬 Iniciando animación de cartas INMEDIATAMENTE...');
 
                         // Iniciar animación inmediatamente sin esperar nextTick
-                        animateCards(preparedCards);
+                        animateCards(preparedCards, assistantMessage);
 
                         // Scroll después de nextTick
                         nextTick().then(() => {
@@ -260,7 +268,7 @@ const handleQuestionSubmitted = async (question) => {
                 scrollToBottom();
 
                 // Animar cartas
-                await animateCards(preparedCards);
+                await animateCards(preparedCards, assistantMessage);
 
                 receivedCards = result.cards;
                 fullInterpretation = result.interpretation;
