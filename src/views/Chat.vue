@@ -84,10 +84,11 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const prepareCardsForAnimation = (cards) => {
     if (!cards || cards.length === 0) return cards;
+    // Por ahora mostrar las cartas ya reveladas para que aparezcan inmediatamente
     return cards.map(card => ({
         ...card,
-        revealed: false,
-        isFlipped: false
+        revealed: true,
+        isFlipped: true
     }));
 };
 
@@ -215,12 +216,10 @@ const handleQuestionSubmitted = async (question) => {
                     if (eventType === 'interpretation') {
                         console.log('📖 Interpretation chunk:', data.text);
                         fullInterpretation += data.text;
-                        if (assistantMessage && !showInterpretationTimer) {
-                            // Solo programar el timer la primera vez que llega interpretación
-                            showInterpretationTimer = setTimeout(() => {
-                                assistantMessage.interpretation = fullInterpretation;
-                                assistantMessage.isLoading = false;
-                            }, 2500);
+                        if (assistantMessage) {
+                            // Mostrar interpretación inmediatamente
+                            assistantMessage.interpretation = fullInterpretation;
+                            assistantMessage.isLoading = false;
                         }
                     }
 
