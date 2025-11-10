@@ -200,14 +200,13 @@ const handleQuestionSubmitted = async (question) => {
                         readings.value.push(assistantMessage);
                         console.log('✅ Cartas agregadas a readings.value, total items:', readings.value.length);
 
-                        // Forzar actualización del DOM antes de animar
-                        await nextTick();
-                        console.log('✅ nextTick completado, DOM actualizado');
-                        scrollToBottom();
-
-                        // Animar cartas inmediatamente (sin await para no bloquear)
-                        console.log('🎬 Iniciando animación de cartas...');
-                        animateCards(preparedCards);
+                        // Usar nextTick sin await para no bloquear el stream
+                        nextTick().then(() => {
+                            console.log('✅ nextTick completado, DOM actualizado');
+                            scrollToBottom();
+                            console.log('🎬 Iniciando animación de cartas...');
+                            animateCards(preparedCards);
+                        });
                     }
 
                     // Manejar evento de interpretación
