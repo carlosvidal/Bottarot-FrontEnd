@@ -235,7 +235,7 @@ const handleQuestionSubmitted = async (question) => {
                     if (eventType === 'title') {
                         console.log('📝 Title received:', data.title);
                         setTimeout(() => {
-                            chatStore.fetchChatList();
+                            chatStore.fetchChatList(userId);
                         }, 1000);
                     }
                 } catch (parseError) {
@@ -275,7 +275,7 @@ const handleQuestionSubmitted = async (question) => {
 
                 if (result.title) {
                     setTimeout(() => {
-                        chatStore.fetchChatList();
+                        chatStore.fetchChatList(userId);
                     }, 1000);
                 }
             } else {
