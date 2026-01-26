@@ -1,0 +1,398 @@
+<template>
+  <div class="admin-container">
+    <!-- Login -->
+    <div v-if="!isAuthenticated" class="login-box">
+      <h1>Admin Panel</h1>
+      <form @submit.prevent="login">
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Contraseña de admin"
+          class="password-input"
+        />
+        <button type="submit" class="login-btn">Entrar</button>
+        <p v-if="error" class="error">{{ error }}</p>
+      </form>
+    </div>
+
+    <!-- Dashboard -->
+    <div v-else class="dashboard">
+      <header class="admin-header">
+        <h1>Bottarot Admin</h1>
+        <button @click="logout" class="logout-btn">Salir</button>
+      </header>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid" v-if="stats">
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.totalUsers }}</div>
+          <div class="stat-label">Usuarios</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.activeSubscriptions }}</div>
+          <div class="stat-label">Suscripciones Activas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${{ stats.totalRevenue?.toFixed(2) }}</div>
+          <div class="stat-label">Ingresos Totales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.totalMessages }}</div>
+          <div class="stat-label">Mensajes</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button
+          :class="{ active: activeTab === 'subscriptions' }"
+          @click="activeTab = 'subscriptions'"
+        >
+          Suscripciones
+        </button>
+        <button
+          :class="{ active: activeTab === 'payments' }"
+          @click="activeTab = 'payments'"
+        >
+          Pagos
+        </button>
+      </div>
+
+      <!-- Subscriptions Table -->
+      <div v-if="activeTab === 'subscriptions'" class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Estado</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="sub in subscriptions" :key="sub.id">
+              <td>{{ sub.user_email }}</td>
+              <td>{{ sub.plan_name || 'N/A' }}</td>
+              <td>
+                <span :class="['status', sub.is_active ? 'active' : 'inactive']">
+                  {{ sub.is_active ? 'Activa' : 'Expirada' }}
+                </span>
+              </td>
+              <td>{{ formatDate(sub.subscription_start_date) }}</td>
+              <td>{{ formatDate(sub.subscription_end_date) }}</td>
+            </tr>
+            <tr v-if="subscriptions.length === 0">
+              <td colspan="5" class="empty">No hay suscripciones</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Payments Table -->
+      <div v-if="activeTab === 'payments'" class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>PayPal ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="payment in payments" :key="payment.id">
+              <td>{{ payment.user_email }}</td>
+              <td>{{ payment.plan_name || 'N/A' }}</td>
+              <td>${{ payment.amount }}</td>
+              <td>
+                <span :class="['status', payment.status]">
+                  {{ payment.status }}
+                </span>
+              </td>
+              <td>{{ formatDate(payment.created_at) }}</td>
+              <td class="paypal-id">{{ payment.paypal_order_id || '-' }}</td>
+            </tr>
+            <tr v-if="payments.length === 0">
+              <td colspan="6" class="empty">No hay pagos</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+const password = ref('')
+const isAuthenticated = ref(false)
+const error = ref('')
+const activeTab = ref('subscriptions')
+
+const stats = ref(null)
+const subscriptions = ref([])
+const payments = ref([])
+
+// Check if already logged in
+onMounted(() => {
+  const savedPassword = sessionStorage.getItem('adminPassword')
+  if (savedPassword) {
+    password.value = savedPassword
+    loadData()
+  }
+})
+
+async function login() {
+  error.value = ''
+  try {
+    const res = await fetch(`${API_URL}/api/admin/stats`, {
+      headers: { 'x-admin-password': password.value }
+    })
+
+    if (res.ok) {
+      sessionStorage.setItem('adminPassword', password.value)
+      isAuthenticated.value = true
+      loadData()
+    } else {
+      error.value = 'Contraseña incorrecta'
+    }
+  } catch (e) {
+    error.value = 'Error de conexión'
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminPassword')
+  isAuthenticated.value = false
+  password.value = ''
+}
+
+async function loadData() {
+  const headers = { 'x-admin-password': password.value }
+
+  try {
+    // Load stats
+    const statsRes = await fetch(`${API_URL}/api/admin/stats`, { headers })
+    if (statsRes.ok) {
+      stats.value = await statsRes.json()
+      isAuthenticated.value = true
+    }
+
+    // Load subscriptions
+    const subsRes = await fetch(`${API_URL}/api/admin/subscriptions`, { headers })
+    if (subsRes.ok) {
+      const data = await subsRes.json()
+      subscriptions.value = data.subscriptions || []
+    }
+
+    // Load payments
+    const payRes = await fetch(`${API_URL}/api/admin/payments`, { headers })
+    if (payRes.ok) {
+      const data = await payRes.json()
+      payments.value = data.payments || []
+    }
+  } catch (e) {
+    console.error('Error loading admin data:', e)
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+</script>
+
+<style scoped>
+.admin-container {
+  min-height: 100vh;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 20px;
+}
+
+/* Login */
+.login-box {
+  max-width: 300px;
+  margin: 100px auto;
+  text-align: center;
+}
+
+.login-box h1 {
+  margin-bottom: 20px;
+  color: #d4af37;
+}
+
+.password-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #16213e;
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: #d4af37;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background: #c4a030;
+}
+
+.error {
+  color: #ff6b6b;
+  margin-top: 10px;
+}
+
+/* Dashboard */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.admin-header h1 {
+  color: #d4af37;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #666;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #16213e;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  background: #16213e;
+  border: none;
+  color: #888;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: #d4af37;
+  color: #000;
+}
+
+/* Table */
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #16213e;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+th {
+  background: #0f0f23;
+  color: #d4af37;
+  font-weight: 600;
+}
+
+tr:hover {
+  background: #1e2a4a;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.status.active, .status.completed {
+  background: #2ecc71;
+  color: #000;
+}
+
+.status.inactive, .status.pending {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.status.failed {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.paypal-id {
+  font-family: monospace;
+  font-size: 11px;
+  color: #888;
+}
+
+.empty {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+}
+</style>
