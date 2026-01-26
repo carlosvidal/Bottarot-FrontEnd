@@ -10,6 +10,7 @@ import Profile from '../views/Profile.vue'
 import Checkout from '../views/Checkout.vue'
 import CheckoutSuccess from '../views/CheckoutSuccess.vue'
 import Debug from '../views/Debug.vue'
+import Admin from '../views/Admin.vue'
 
 // UUID Generator
 function generateUUID() {
@@ -41,6 +42,8 @@ const router = createRouter({
       beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
         if (!auth.isInitialized) await waitForAuthInitialization();
+        // Allow users to go directly to chat (including anonymous)
+        // Registered users go to chat, others can also try the chat experience
         if (auth.isLoggedIn && auth.isFullyRegistered) {
           next({ name: 'new-chat' });
         } else {
@@ -75,9 +78,15 @@ const router = createRouter({
       beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
         if (!auth.isInitialized) await waitForAuthInitialization();
-        if (!auth.isLoggedIn || auth.needsRegistration) {
+        // Allow anonymous users to access chat (they'll see readings with hidden future)
+        // Only redirect if user is logged in but needs registration
+        if (auth.isLoggedIn && auth.needsRegistration) {
           next({ name: 'landing' });
         } else {
+          // Load reading permissions for anonymous users
+          if (!auth.isLoggedIn) {
+            auth.loadReadingPermissions();
+          }
           next();
         }
       }
@@ -134,6 +143,11 @@ const router = createRouter({
       path: '/debug',
       name: 'debug',
       component: Debug
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: Admin
     },
     {
       path: '/shared/:shareId',

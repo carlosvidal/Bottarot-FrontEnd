@@ -18,35 +18,52 @@
 
             <!-- Plans selection -->
             <div v-else-if="!selectedPlan" class="plans-section">
-                <h2>Planes Disponibles</h2>
+                <router-link to="/chat/new" class="back-link">← Volver al chat</router-link>
+                <h2>Desbloquea tu Destino Completo</h2>
+                <p class="plans-subtitle">Elige el camino que mejor se adapte a tu viaje espiritual</p>
                 <div class="plans-grid">
                     <div
                         v-for="plan in plans"
                         :key="plan.id"
                         class="plan-card"
-                        :class="{ 'premium': plan.price > 0 && plan.price <= 1 }"
+                        :class="{
+                            'plan-trial': plan.plan_type === 'trial',
+                            'plan-popular': plan.badge_text === 'MÁS POPULAR',
+                            'plan-annual': plan.plan_type === 'annual'
+                        }"
                         @click="selectPlan(plan)"
                     >
+                        <!-- Badge -->
+                        <div v-if="plan.badge_text" class="plan-badge" :class="{
+                            'badge-special': plan.badge_text === 'OFERTA ESPECIAL',
+                            'badge-popular': plan.badge_text === 'MÁS POPULAR',
+                            'badge-value': plan.badge_text === 'MEJOR VALOR'
+                        }">
+                            {{ plan.badge_text }}
+                        </div>
+
                         <h3>{{ plan.name }}</h3>
                         <div class="price">
                             <span class="amount">${{ plan.price.toFixed(2) }}</span>
-                            <span class="period" v-if="plan.duration_days === 7">/ semana</span>
+                            <span class="period" v-if="plan.duration_days === 7">/ 7 días</span>
                             <span class="period" v-else-if="plan.duration_days === 30">/ mes</span>
+                            <span class="period" v-else-if="plan.duration_days === 365">/ año</span>
                         </div>
                         <p class="description">{{ plan.description }}</p>
                         <ul class="features" v-if="plan.features">
-                            <li v-if="plan.features.unlimited_questions">✅ Preguntas ilimitadas</li>
-                            <li v-if="plan.features.premium_readings">✅ Lecturas premium</li>
-                            <li v-if="plan.features.full_history">✅ Historial completo</li>
-                            <li v-if="plan.features.export_pdf">✅ Exportar a PDF</li>
-                            <li v-if="plan.features.priority_support">✅ Soporte prioritario</li>
-                            <li v-if="plan.max_questions_per_period && !plan.features.unlimited_questions">
-                                📊 {{ plan.max_questions_per_period }} pregunta{{ plan.max_questions_per_period > 1 ? 's' : '' }} por {{ plan.duration_days === 7 ? 'semana' : 'mes' }}
-                            </li>
+                            <li v-if="plan.features.unlimited_readings">✨ Lecturas ilimitadas</li>
+                            <li v-if="plan.features.full_future">🔮 Futuro siempre revelado</li>
+                            <li v-if="plan.features.full_history">📚 Historial completo</li>
+                            <li v-if="plan.features.priority_support">⭐ Soporte prioritario</li>
                         </ul>
-                        <button class="select-button" :disabled="plan.price === 0">
-                            {{ plan.price === 0 ? 'Plan Actual' : 'Seleccionar' }}
+                        <button class="select-button" :class="{ 'btn-ritual': plan.plan_type === 'trial' }">
+                            {{ plan.plan_type === 'trial' ? 'Comenzar Ritual' : 'Seleccionar' }}
                         </button>
+
+                        <!-- Savings indicator for annual plan -->
+                        <div v-if="plan.plan_type === 'annual'" class="savings-badge">
+                            Ahorra $32 al año
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,22 +138,26 @@ const paymentError = ref(null)
 
 const API_URL = import.meta.env.VITE_API_URL
 
-// Load subscription plans
+// Load subscription plans (available for the current user)
 const loadPlans = async () => {
     try {
-        console.log('🛒 Checkout: Loading plans...')
+        console.log('🛒 Checkout: Loading available plans...')
         loadingPlans.value = true
         errorMessage.value = null
 
-        console.log('🛒 Checkout: API_URL:', API_URL)
-        const response = await fetch(`${API_URL}/api/subscription-plans`)
+        const userId = auth.user?.id || 'anonymous'
+        console.log('🛒 Checkout: API_URL:', API_URL, 'userId:', userId)
+
+        // Use the available plans endpoint to filter promotional plans by eligibility
+        const response = await fetch(`${API_URL}/api/subscription-plans/available/${userId}`)
 
         if (!response.ok) {
             throw new Error('Error cargando planes')
         }
 
         const data = await response.json()
-        plans.value = data.plans || []
+        // Filter out free plan from display (it's the default)
+        plans.value = (data.plans || []).filter(p => p.price > 0)
         console.log('🛒 Checkout: Plans loaded:', plans.value.length)
 
     } catch (error) {
@@ -280,11 +301,32 @@ p {
 }
 
 /* Plans Section */
+.back-link {
+    display: inline-block;
+    color: #ffd700;
+    text-decoration: none;
+    margin-bottom: 20px;
+    font-size: 1rem;
+    transition: opacity 0.3s;
+}
+
+.back-link:hover {
+    opacity: 0.8;
+}
+
 .plans-section h2 {
     color: #ffd700;
     font-size: 2rem;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     text-align: center;
+}
+
+.plans-subtitle {
+    color: #aaa;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-bottom: 30px;
+    font-style: italic;
 }
 
 .plans-grid {
@@ -311,23 +353,80 @@ p {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-.plan-card.premium {
-    border-color: #ffd700;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+/* Plan Card Variants */
+.plan-card.plan-trial {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
 }
 
-.plan-card.premium::before {
-    content: "🎉 OFERTA ESPECIAL";
+.plan-card.plan-popular {
+    border-color: #ffd700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+    transform: scale(1.02);
+}
+
+.plan-card.plan-annual {
+    border-color: #4ade80;
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+/* Plan Badges */
+.plan-badge {
     position: absolute;
     top: -12px;
     left: 50%;
     transform: translateX(-50%);
-    background: #ffd700;
-    color: #1a1a2e;
-    padding: 5px 15px;
+    padding: 6px 18px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.badge-special {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+    animation: pulseBadge 2s ease-in-out infinite;
+}
+
+.badge-popular {
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    color: #1a1a2e;
+}
+
+.badge-value {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #1a1a2e;
+}
+
+@keyframes pulseBadge {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.8); }
+}
+
+/* Savings Badge */
+.savings-badge {
+    margin-top: 15px;
+    padding: 8px 16px;
+    background: rgba(74, 222, 128, 0.15);
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    border-radius: 20px;
+    color: #4ade80;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+/* Ritual Button */
+.btn-ritual {
+    background: linear-gradient(45deg, #8b0000, #b22222) !important;
+    animation: pulseRitual 2s ease-in-out infinite;
+}
+
+@keyframes pulseRitual {
+    0%, 100% { box-shadow: 0 0 10px rgba(139, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(139, 0, 0, 0.8); }
 }
 
 .plan-card h3 {

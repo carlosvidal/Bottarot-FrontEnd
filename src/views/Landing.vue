@@ -102,35 +102,70 @@ const handleSignup = async (event) => {
             <!-- Default Logged-out View -->
             <div v-if="!showSignupForm && !auth.needsRegistration">
                 <p class="subtitle">Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.</p>
+
+                <!-- Try anonymously first -->
+                <div class="try-section">
+                    <router-link to="/chat" class="try-button">
+                        🔮 Probar una Lectura Gratis
+                    </router-link>
+                    <p class="try-note">Sin registro · Tu futuro permanecerá velado</p>
+                </div>
+
+                <div class="divider-section">
+                    <span class="divider-line"></span>
+                    <span class="divider-text">o</span>
+                    <span class="divider-line"></span>
+                </div>
+
                 <div class="social-login">
-                    <p>Regístrate o inicia sesión con:</p>
+                    <p class="register-title">✨ Reclama tu identidad espiritual ✨</p>
+                    <p class="register-benefit">Durante tus primeros 5 días, el tarot revelará tu futuro completo</p>
                     <div class="social-buttons">
                         <button @click="handleGoogleLogin" class="social-btn google" :disabled="auth.loading">
-                            {{ auth.loading ? 'Cargando...' : 'Google' }}
+                            {{ auth.loading ? 'Conectando...' : 'Google' }}
                         </button>
                         <button @click="handleFacebookLogin" class="social-btn facebook" :disabled="auth.loading">
-                            {{ auth.loading ? 'Cargando...' : 'Facebook' }}
+                            {{ auth.loading ? 'Conectando...' : 'Facebook' }}
                         </button>
-                        <button @click="displaySignupForm" class="social-btn tiktok">TikTok</button>
                     </div>
                 </div>
+
                 <div class="offer-section">
-                    <h2>Nuestra Oferta</h2>
+                    <h2>Tu Camino Espiritual</h2>
                     <div class="offers">
-                        <div class="offer-card">
-                            <h3>Gratis</h3>
-                            <p>1 pregunta a la semana, para siempre.</p>
+                        <div class="offer-card free-tier">
+                            <div class="offer-icon">🌙</div>
+                            <h3>Buscador</h3>
+                            <p class="offer-price">Gratis</p>
+                            <ul class="offer-features">
+                                <li>1 lectura por día</li>
+                                <li>5 futuros revelados</li>
+                                <li>Historial limitado</li>
+                            </ul>
                         </div>
                         <router-link to="/checkout" class="offer-card-link">
                             <div class="offer-card premium">
-                                <h3>Semana de Lanzamiento</h3>
-                                <p>Preguntas ilimitadas por solo <strong>$1</strong>.</p>
+                                <div class="offer-badge">OFERTA ESPECIAL</div>
+                                <div class="offer-icon">🔮</div>
+                                <h3>Ritual de Iniciación</h3>
+                                <p class="offer-price"><strong>$1</strong> <span class="price-period">/ 7 días</span></p>
+                                <ul class="offer-features">
+                                    <li>Lecturas ilimitadas</li>
+                                    <li>Futuro siempre visible</li>
+                                    <li>Historial completo</li>
+                                </ul>
                             </div>
                         </router-link>
                         <router-link to="/checkout" class="offer-card-link">
                             <div class="offer-card">
-                                <h3>Ilimitado</h3>
-                                <p><strong>$5</strong> por semana de preguntas ilimitadas.</p>
+                                <div class="offer-icon">⭐</div>
+                                <h3>Pase Mensual</h3>
+                                <p class="offer-price"><strong>$8</strong> <span class="price-period">/ mes</span></p>
+                                <ul class="offer-features">
+                                    <li>Sin interrupciones</li>
+                                    <li>Todo desbloqueado</li>
+                                    <li>Mejor valor</li>
+                                </ul>
                             </div>
                         </router-link>
                     </div>
@@ -199,25 +234,146 @@ const handleSignup = async (event) => {
 .main-cta-button:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); }
 .main-cta-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Try Section */
+.try-section {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.try-button {
+    display: inline-block;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    padding: 18px 40px;
+    font-size: 1.3rem;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 25px rgba(102, 126, 234, 0.4);
+    font-weight: bold;
+}
+
+.try-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+}
+
+.try-note {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: #888;
+    font-style: italic;
+}
+
+/* Divider */
+.divider-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 25px 0;
+    gap: 15px;
+}
+
+.divider-line {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.3), transparent);
+}
+
+.divider-text {
+    color: #666;
+    font-size: 0.9rem;
+}
+
 /* Social Login */
 .social-login { margin-bottom: 40px; }
-.social-login p { margin-bottom: 15px; color: #ccc; }
-.social-buttons { display: flex; justify-content: center; gap: 15px; }
-.social-btn { border: none; padding: 10px 20px; border-radius: 5px; font-size: 1rem; cursor: pointer; transition: opacity 0.3s; color: white; }
+.register-title {
+    font-size: 1.3rem;
+    color: #ffd700;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.register-benefit {
+    font-size: 1rem;
+    color: #aaa;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+.social-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+.social-btn { border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; color: white; font-weight: 500; }
 .social-btn.google { background-color: #DB4437; }
 .social-btn.facebook { background-color: #4267B2; }
-.social-btn.tiktok { background-color: #000000; }
-.social-btn:hover:not(:disabled) { opacity: 0.8; }
+.social-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); }
 .social-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Offers */
 .offer-section { margin-bottom: 40px; }
-.offer-section h2 { font-size: 2rem; color: #ffd700; margin-bottom: 20px; }
+.offer-section h2 { font-size: 2rem; color: #ffd700; margin-bottom: 25px; }
 .offers { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-.offer-card { background: rgba(22, 33, 62, 0.5); padding: 20px; border-radius: 10px; border: 1px solid #0f3460; width: 200px; }
-.offer-card.premium { border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
-.offer-card h3 { font-size: 1.5rem; margin-bottom: 10px; color: #e0e0e0; }
-.offer-card p { font-size: 1rem; line-height: 1.4; }
+.offer-card {
+    background: rgba(22, 33, 62, 0.6);
+    padding: 25px 20px;
+    border-radius: 15px;
+    border: 2px solid #0f3460;
+    width: 220px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+}
+.offer-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+.offer-card.free-tier {
+    border-color: #555;
+}
+.offer-card.premium {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 25px rgba(255, 107, 107, 0.4);
+}
+.offer-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+.offer-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.offer-card h3 { font-size: 1.3rem; margin-bottom: 8px; color: #e0e0e0; }
+.offer-price {
+    font-size: 1.8rem;
+    color: #ffd700;
+    margin-bottom: 15px;
+}
+.offer-price strong { font-size: 2rem; }
+.price-period {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+.offer-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+.offer-features li {
+    padding: 5px 0;
+    color: #ccc;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.offer-features li:last-child {
+    border-bottom: none;
+}
 .offer-card-link { text-decoration: none; color: inherit; }
 
 

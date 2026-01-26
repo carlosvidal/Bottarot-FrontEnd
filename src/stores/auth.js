@@ -11,8 +11,30 @@ export const useAuthStore = defineStore('auth', () => {
   const isInitialized = ref(false)
   const warmupMessage = ref('')
 
+  // New: Reading permissions state
+  const readingPermissions = ref(null)
+  const anonymousSessionId = ref(null)
+
   const isLoggedIn = computed(() => !!user.value)
   const isFullyRegistered = computed(() => isLoggedIn.value && !needsRegistration.value)
+
+  // New: Reading permission computed properties
+  const canReadToday = computed(() => {
+    if (!readingPermissions.value) return true
+    return readingPermissions.value.can_read_today
+  })
+
+  const canSeeFuture = computed(() => {
+    if (!readingPermissions.value) return false
+    return readingPermissions.value.can_see_future || readingPermissions.value.is_premium
+  })
+
+  const freeFuturesRemaining = computed(() => {
+    if (!readingPermissions.value) return 0
+    return readingPermissions.value.free_futures_remaining || 0
+  })
+
+  const isAnonymousUser = computed(() => !user.value)
 
   // Subscription related computed properties
   const isSubscriptionActive = computed(() => {
@@ -89,10 +111,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       // If we have a user, check their profile and subscription
       if (session?.user) {
-        console.log('👤 Loading user profile and subscription...')
+        console.log('👤 Loading user profile, subscription and permissions...')
         await checkUserProfile(session.user)
         await loadUserSubscription()
+        await loadReadingPermissions()
         console.log('✅ User data loaded successfully')
+      } else {
+        // For anonymous users, load their anonymous permissions
+        await loadReadingPermissions()
       }
 
       isInitialized.value = true
@@ -170,17 +196,19 @@ export const useAuthStore = defineStore('auth', () => {
         // Temporarily disabled warmup to avoid ElevenLabs rate limiting
         // performWarmup()
 
-        // Run profile check and subscription loading in background WITHOUT blocking
+        // Run profile check, subscription and permissions loading in background WITHOUT blocking
         Promise.all([
           checkUserProfile(session.user),
-          loadUserSubscription()
+          loadUserSubscription(),
+          loadReadingPermissions()
         ]).then(() => {
           console.log('✅ Profile check complete. needsRegistration:', needsRegistration.value)
           console.log('🔍 Auth state after profile check:', {
             isLoggedIn: isLoggedIn.value,
             isFullyRegistered: isFullyRegistered.value,
             needsRegistration: needsRegistration.value,
-            user: !!user.value
+            user: !!user.value,
+            canSeeFuture: canSeeFuture.value
           })
         }).catch(error => {
           console.error('⚠️ Profile loading failed:', error)
@@ -370,6 +398,99 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Generate or retrieve anonymous session ID
+  const getAnonymousSessionId = () => {
+    if (anonymousSessionId.value) return anonymousSessionId.value
+
+    // Check localStorage for existing session
+    let sessionId = localStorage.getItem('bottarot_anonymous_session')
+    if (!sessionId) {
+      sessionId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+      localStorage.setItem('bottarot_anonymous_session', sessionId)
+    }
+    anonymousSessionId.value = sessionId
+    return sessionId
+  }
+
+  // Load user reading permissions
+  const loadReadingPermissions = async () => {
+    const API_URL = import.meta.env.VITE_API_URL
+    const userId = user.value?.id || 'anonymous'
+
+    try {
+      console.log('📊 Loading reading permissions for:', userId)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+      const response = await fetch(`${API_URL}/api/user/reading-permissions/${userId}`, {
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        const data = await response.json()
+        readingPermissions.value = data
+        console.log('✅ Reading permissions loaded:', data)
+      } else {
+        console.error('❌ Error loading reading permissions:', response.status)
+        // Set default permissions
+        readingPermissions.value = {
+          is_premium: false,
+          can_read_today: true,
+          can_see_future: !user.value, // Anonymous can't see future
+          readings_today: 0,
+          free_futures_remaining: user.value ? 5 : 0,
+          history_limit: user.value ? 3 : 0,
+          plan_name: user.value ? 'Gratuito' : 'Anónimo'
+        }
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('⏰ Reading permissions loading timed out')
+      } else {
+        console.error('❌ Exception loading reading permissions:', error)
+      }
+      // Set default permissions on error
+      readingPermissions.value = {
+        is_premium: false,
+        can_read_today: true,
+        can_see_future: false,
+        readings_today: 0,
+        free_futures_remaining: 0,
+        history_limit: 3,
+        plan_name: 'Gratuito'
+      }
+    }
+  }
+
+  // Record a reading (update stats)
+  const recordReading = async (revealedFuture = false) => {
+    if (!user.value?.id) return
+
+    const API_URL = import.meta.env.VITE_API_URL
+    try {
+      console.log('📝 Recording reading, revealedFuture:', revealedFuture)
+      const response = await fetch(`${API_URL}/api/user/record-reading`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.value.id,
+          revealedFuture
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Reading recorded:', data)
+        // Reload permissions to update counts
+        await loadReadingPermissions()
+      }
+    } catch (error) {
+      console.error('❌ Error recording reading:', error)
+    }
+  }
+
   // Load user subscription info
   const loadUserSubscription = async () => {
     if (!user.value?.id) {
@@ -487,6 +608,13 @@ export const useAuthStore = defineStore('auth', () => {
     canAskQuestion,
     questionsRemaining,
     currentPlan,
+    // Reading permissions properties
+    readingPermissions,
+    canReadToday,
+    canSeeFuture,
+    freeFuturesRemaining,
+    isAnonymousUser,
+    anonymousSessionId,
     // Auth functions
     initAuth,
     setupAuthListener,
@@ -502,6 +630,10 @@ export const useAuthStore = defineStore('auth', () => {
     loadUserSubscription,
     checkCanAskQuestion,
     recordQuestion,
+    // Reading permissions functions
+    loadReadingPermissions,
+    recordReading,
+    getAnonymousSessionId,
     // Warmup functions
     performWarmup,
     showWarmupMessage

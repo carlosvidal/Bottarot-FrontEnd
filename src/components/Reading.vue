@@ -1,6 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { marked } from 'marked';
+
+const router = useRouter();
 
 const props = defineProps({
     cards: {
@@ -14,8 +17,37 @@ const props = defineProps({
     isLoading: {
         type: Boolean,
         default: false
+    },
+    futureHidden: {
+        type: Boolean,
+        default: false
+    },
+    ctaMessage: {
+        type: String,
+        default: null
+    },
+    isAnonymous: {
+        type: Boolean,
+        default: false
     }
 });
+
+// Emits for CTA actions
+const emit = defineEmits(['unlock-future', 'register']);
+
+// Check if a card is the future card (index 2)
+const isFutureCard = (index) => index === 2;
+
+// Handle CTA click
+const handleCtaClick = () => {
+    if (props.isAnonymous) {
+        emit('register');
+        router.push('/landing');
+    } else {
+        emit('unlock-future');
+        router.push('/checkout');
+    }
+};
 
 // Debug logging
 watch(() => props.cards, (newCards) => {
@@ -103,10 +135,10 @@ const playAudio = async () => {
     <div>
         <div v-if="cards && cards.length > 0" class="cards-container">
             <div v-for="(card, index) in cards" :key="card.name" class="card"
-                :class="{ 'is-visible': card.revealed }">
+                :class="{ 'is-visible': card.revealed, 'future-hidden': futureHidden && isFutureCard(index) }">
                 <h4 v-if="card.isFlipped" class="card-position-title">{{ cardTitles[index] }}</h4>
                 <div class="card-visual-wrapper">
-                    <div class="card-inner" :class="{ 'is-flipped': card.isFlipped }">
+                    <div class="card-inner" :class="{ 'is-flipped': card.isFlipped && !(futureHidden && isFutureCard(index)) }">
                         <div class="card-face card-face--back">
                             <img :src="cardBackImg" alt="Card Back" class="card-image">
                         </div>
@@ -115,11 +147,26 @@ const playAudio = async () => {
                                 :class="{ 'is-inverted': !card.upright }">
                         </div>
                     </div>
+                    <!-- Mystical overlay for hidden future -->
+                    <div v-if="futureHidden && isFutureCard(index) && card.isFlipped" class="future-overlay">
+                        <div class="future-overlay-content">
+                            <div class="mystical-symbol">🔮</div>
+                            <p class="overlay-text">{{ ctaMessage || 'Tu futuro aguarda ser revelado' }}</p>
+                            <button @click="handleCtaClick" class="unlock-btn">
+                                {{ isAnonymous ? 'Reclamar mi identidad' : 'Desbloquear futuro' }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div v-if="card.isFlipped" class="card-info">
+                <div v-if="card.isFlipped && !(futureHidden && isFutureCard(index))" class="card-info">
                     <h3 class="card-name">{{ card.name }} <span v-if="!card.upright"
                             class="card-orientation card-orientation_invertida">(Invertida)</span></h3>
                     <p class="card-description">{{ card.description }}</p>
+                </div>
+                <!-- Hidden future card info placeholder -->
+                <div v-if="card.isFlipped && futureHidden && isFutureCard(index)" class="card-info card-info--hidden">
+                    <h3 class="card-name">??? <span class="card-orientation card-orientation_oculta">(Oculto)</span></h3>
+                    <p class="card-description">El futuro permanece velado hasta que reclames tu destino...</p>
                 </div>
             </div>
         </div>
@@ -259,5 +306,86 @@ const playAudio = async () => {
     font-size: 1.05rem;
     line-height: 1.8;
     color: #f4f4f4;
+}
+
+/* Future Hidden Styles */
+.card.future-hidden .card-visual-wrapper {
+    position: relative;
+}
+
+.future-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(15, 52, 96, 0.95), rgba(26, 26, 46, 0.98));
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    animation: mysticalPulse 3s ease-in-out infinite;
+}
+
+@keyframes mysticalPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+}
+
+.future-overlay-content {
+    text-align: center;
+    padding: 20px;
+}
+
+.mystical-symbol {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    animation: floatSymbol 2s ease-in-out infinite;
+}
+
+@keyframes floatSymbol {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.overlay-text {
+    color: #ffd700;
+    font-size: 1rem;
+    font-style: italic;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.unlock-btn {
+    background: linear-gradient(45deg, #8b4513, #a0522d);
+    color: white;
+    border: 2px solid #ffd700;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.unlock-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+    background: linear-gradient(45deg, #a0522d, #cd853f);
+}
+
+.card-info--hidden {
+    background: linear-gradient(145deg, rgba(42, 42, 62, 0.7), rgba(31, 31, 50, 0.7));
+    border: 1px dashed rgba(255, 215, 0, 0.3);
+}
+
+.card-orientation.card-orientation_oculta {
+    color: #aaa;
+    font-size: 1rem;
+    font-weight: normal;
+    font-style: italic;
 }
 </style>
