@@ -36,31 +36,34 @@ const submitQuestion = () => {
 
 <style scoped>
 .question-form-container {
-    padding: 20px;
+    padding: 12px;
     background: linear-gradient(135deg, #1a1a2e, #16213e);
     width: 100%;
+    box-sizing: border-box;
     box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .question-container {
     max-width: 800px;
-    margin: 0 auto 20px;
+    margin: 0 auto 12px;
     position: relative;
 }
 
 .question-input {
     display: block;
     width: 100%;
-    padding: 15px;
-    padding-bottom: 30px;
+    padding: 12px;
+    padding-bottom: 28px;
     font-family: 'Georgia', serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #f4f4f4;
     background-color: rgba(15, 52, 96, 0.7);
     border: 2px solid #0f3460;
     border-radius: 8px;
-    resize: vertical;
-    min-height: 70px;
+    resize: none;
+    min-height: 60px;
+    max-height: 120px;
+    box-sizing: border-box;
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
 }
@@ -107,5 +110,19 @@ const submitQuestion = () => {
 .draw-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* Desktop styles */
+@media (min-width: 769px) {
+    .question-form-container { padding: 20px; }
+    .question-container { margin-bottom: 20px; }
+    .question-input {
+        padding: 15px;
+        padding-bottom: 30px;
+        font-size: 1.1rem;
+        min-height: 70px;
+        max-height: 150px;
+        resize: vertical;
+    }
 }
 </style>
