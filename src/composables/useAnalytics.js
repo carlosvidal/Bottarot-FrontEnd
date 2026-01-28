@@ -3,10 +3,12 @@
  * Proporciona funciones consistentes para trackear eventos en toda la aplicación
  */
 
+import { hasAnalyticsConsent } from '@/utils/cookieConsent.js'
+
 export function useAnalytics() {
-  // Verificar si gtag está disponible
+  // Verificar si gtag está disponible y el usuario ha dado consentimiento
   const isGtagAvailable = () => {
-    return typeof window !== 'undefined' && typeof window.gtag === 'function'
+    return typeof window !== 'undefined' && typeof window.gtag === 'function' && hasAnalyticsConsent()
   }
 
   // Función base para enviar eventos
