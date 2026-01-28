@@ -18,7 +18,7 @@
     <!-- Dashboard -->
     <div v-else class="dashboard">
       <header class="admin-header">
-        <h1>Bottarot Admin</h1>
+        <h1>Free Tarot Fun Admin</h1>
         <button @click="logout" class="logout-btn">Salir</button>
       </header>
 

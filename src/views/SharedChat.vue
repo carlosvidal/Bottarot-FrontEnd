@@ -47,7 +47,7 @@ onMounted(() => {
     <div class="shared-chat-layout">
         <header class="shared-header">
             <div class="header-content">
-                <h1>Bottarot - Chat Compartido</h1>
+                <h1>Free Tarot Fun - Chat Compartido</h1>
                 <p>Este es un chat compartido de forma anónima</p>
             </div>
         </header>

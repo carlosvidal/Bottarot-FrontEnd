@@ -97,8 +97,8 @@ const handleSignup = async (event) => {
     <div class="landing-container">
 
         <div class="main-content">
-            <h1 class="title">🔮 Oráculo IA 🔮</h1>
-            
+            <h1 class="title">🔮 Free Tarot Fun 🔮</h1>
+
             <!-- Default Logged-out View -->
             <div v-if="!showSignupForm && !auth.needsRegistration">
                 <p class="subtitle">Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.</p>
