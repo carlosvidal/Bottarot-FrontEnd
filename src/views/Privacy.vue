@@ -2,9 +2,9 @@
     <div class="legal-container">
         <div class="content">
             <h1>Políticas de Privacidad</h1>
-            <p>Última actualización: 19 de Septiembre de 2025</p>
-            
-            <p>Esta política de privacidad establece cómo Oráculo IA utiliza y protege cualquier información que nos proporcionas cuando utilizas este sitio web.</p>
+            <p>Última actualización: 27 de Enero de 2026</p>
+
+            <p>Esta política de privacidad establece cómo Free Tarot Fun (freetarot.fun) utiliza y protege cualquier información que nos proporcionas cuando utilizas este sitio web.</p>
 
             <h2>Información que Recopilamos</h2>
             <p>Podemos recopilar la siguiente información:</p>

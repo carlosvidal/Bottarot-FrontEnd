@@ -2,9 +2,9 @@
     <div class="legal-container">
         <div class="content">
             <h1>Términos y Condiciones</h1>
-            <p>Última actualización: 19 de Septiembre de 2025</p>
-            
-            <p>Bienvenido a Oráculo IA. Al acceder y utilizar nuestro servicio, aceptas cumplir y estar sujeto a los siguientes términos y condiciones de uso, que junto con nuestra política de privacidad gobiernan la relación de Oráculo IA contigo en relación a este sitio web.</p>
+            <p>Última actualización: 27 de Enero de 2026</p>
+
+            <p>Bienvenido a Free Tarot Fun (freetarot.fun). Al acceder y utilizar nuestro servicio, aceptas cumplir y estar sujeto a los siguientes términos y condiciones de uso, que junto con nuestra política de privacidad gobiernan la relación de Free Tarot Fun contigo en relación a este sitio web.</p>
 
             <h2>Uso del Servicio</h2>
             <p>El contenido de las páginas de este sitio web es para tu información general y uso exclusivo. Está sujeto a cambios sin previo aviso.</p>

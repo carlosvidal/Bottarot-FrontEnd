@@ -359,7 +359,7 @@ export const getPersonalizedGreeting = async () => {
   const personalContext = await generatePersonalContext()
 
   if (!personalContext.hasProfile) {
-    return 'Bienvenido al oráculo'
+    return 'Bienvenido a Free Tarot Fun'
   }
 
   const { profile, timeContext, specialDates } = personalContext

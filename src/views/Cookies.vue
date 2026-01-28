@@ -2,9 +2,9 @@
     <div class="legal-container">
         <div class="content">
             <h1>Políticas de Cookies</h1>
-            <p>Última actualización: 19 de Septiembre de 2025</p>
-            
-            <p>Esta página describe qué son las cookies y cómo las utilizamos en Oráculo IA.</p>
+            <p>Última actualización: 27 de Enero de 2026</p>
+
+            <p>Esta página describe qué son las cookies y cómo las utilizamos en Free Tarot Fun (freetarot.fun).</p>
 
             <h2>¿Qué son las Cookies?</h2>
             <p>Una cookie es un pequeño archivo que pide permiso para ser colocado en el disco duro de tu ordenador. Una vez que aceptas, el archivo se añade y la cookie ayuda a analizar el tráfico web o te permite saber cuándo visitas un sitio en particular.</p>
