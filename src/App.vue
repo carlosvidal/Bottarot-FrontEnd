@@ -71,6 +71,14 @@ useLocale()
     /* Accent with opacity */
     --accent-dim: rgba(255, 215, 0, 0.3);
     --accent-glow: rgba(255, 215, 0, 0.4);
+    --accent-border: rgba(255, 215, 0, 0.5);
+
+    /* Button shadows with color */
+    --shadow-btn-secondary: rgba(102, 126, 234, 0.4);
+    --shadow-btn-secondary-hover: rgba(102, 126, 234, 0.6);
+
+    /* Error/Warning shadows */
+    --shadow-error: rgba(255, 107, 107, 0.4);
 
     /* Buttons */
     --btn-primary: #8b4513;
@@ -118,6 +126,14 @@ useLocale()
     /* Accent with opacity */
     --accent-dim: rgba(255, 215, 0, 0.2);
     --accent-glow: rgba(255, 215, 0, 0.3);
+    --accent-border: rgba(255, 215, 0, 0.4);
+
+    /* Button shadows with color */
+    --shadow-btn-secondary: rgba(102, 126, 234, 0.3);
+    --shadow-btn-secondary-hover: rgba(102, 126, 234, 0.5);
+
+    /* Error/Warning shadows */
+    --shadow-error: rgba(255, 107, 107, 0.3);
 
     /* Buttons - keep same for brand consistency */
     --btn-primary: #8b4513;

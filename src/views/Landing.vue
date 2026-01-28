@@ -249,13 +249,13 @@ const handleSignup = async (event) => {
     font-size: 1.3rem;
     border-radius: 30px;
     transition: all 0.3s ease;
-    box-shadow: 0 5px 25px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 5px 25px var(--shadow-btn-secondary);
     font-weight: bold;
 }
 
 .try-button:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+    box-shadow: 0 8px 30px var(--shadow-btn-secondary-hover);
 }
 
 .try-note {
@@ -277,7 +277,7 @@ const handleSignup = async (event) => {
 .divider-line {
     width: 80px;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.3), transparent);
+    background: linear-gradient(to right, transparent, var(--accent-dim), transparent);
 }
 
 .divider-text {
@@ -322,14 +322,14 @@ const handleSignup = async (event) => {
 }
 .offer-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(255, 215, 0, 0.5);
+    border-color: var(--accent-border);
 }
 .offer-card.free-tier {
     border-color: var(--text-tertiary);
 }
 .offer-card.premium {
     border-color: var(--color-error);
-    box-shadow: 0 0 25px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 0 25px var(--shadow-error);
 }
 .offer-badge {
     position: absolute;
