@@ -13,9 +13,9 @@
 </template>
 
 <style scoped>
-.legal-container { font-family: 'Georgia', serif; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); color: #f4f4f4; min-height: 100vh; padding: 40px 20px; display: flex; align-items: center; justify-content: center; }
-.content { max-width: 600px; margin: 0 auto; background: rgba(22, 33, 62, 0.5); padding: 40px; border-radius: 10px; text-align: center; }
-h1 { color: #ffd700; font-size: 2.5rem; margin-bottom: 15px; }
+.legal-container { font-family: var(--font-content); background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary)); color: var(--text-primary); min-height: 100vh; padding: 40px 20px; display: flex; align-items: center; justify-content: center; }
+.content { max-width: 600px; margin: 0 auto; background: var(--bg-overlay-strong); padding: 40px; border-radius: 10px; text-align: center; }
+h1 { color: var(--color-accent-text); font-size: 2.5rem; margin-bottom: 15px; }
 p { font-size: 1.2rem; line-height: 1.7; margin-bottom: 20px; }
 
 .icon {
@@ -24,8 +24,8 @@ p { font-size: 1.2rem; line-height: 1.7; margin-bottom: 20px; }
 }
 
 .main-cta-button {
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
     text-decoration: none;
     padding: 15px 35px;
     font-size: 1.3rem;

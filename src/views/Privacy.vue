@@ -31,26 +31,26 @@
 
 <style scoped>
 .legal-container {
-    font-family: 'Georgia', serif;
-    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-    color: #f4f4f4;
+    font-family: var(--font-content);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary));
+    color: var(--text-primary);
     min-height: 100vh;
     padding: 40px 20px;
 }
 .content {
     max-width: 800px;
     margin: 0 auto;
-    background: rgba(22, 33, 62, 0.5);
+    background: var(--bg-overlay-strong);
     padding: 30px;
     border-radius: 10px;
 }
 h1 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 2.5rem;
     margin-bottom: 20px;
 }
 h2 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.8rem;
     margin-top: 30px;
     margin-bottom: 15px;
@@ -66,8 +66,8 @@ ul {
 .back-button {
     display: inline-block;
     margin-top: 30px;
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
     text-decoration: none;
     padding: 12px 25px;
     border-radius: 8px;

@@ -229,9 +229,9 @@ onMounted(() => {
 
 <style scoped>
 .legal-container {
-    font-family: 'Georgia', serif;
-    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-    color: #f4f4f4;
+    font-family: var(--font-content);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary));
+    color: var(--text-primary);
     min-height: 100vh;
     padding: 40px 20px;
 }
@@ -239,13 +239,13 @@ onMounted(() => {
 .content {
     max-width: 900px;
     margin: 0 auto;
-    background: rgba(22, 33, 62, 0.5);
+    background: var(--bg-overlay-strong);
     padding: 30px;
     border-radius: 10px;
 }
 
 h1 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 2.5rem;
     margin-bottom: 10px;
     text-align: center;
@@ -268,7 +268,7 @@ p {
     width: 50px;
     height: 50px;
     border: 4px solid rgba(255, 215, 0, 0.3);
-    border-left: 4px solid #ffd700;
+    border-left: 4px solid var(--color-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
@@ -280,14 +280,14 @@ p {
 }
 
 .error-text {
-    color: #ff6b6b;
+    color: var(--color-error);
     font-size: 1.2rem;
     margin-bottom: 20px;
 }
 
 .retry-button {
-    background: #ff6b6b;
-    color: white;
+    background: var(--color-error);
+    color: var(--color-white);
     border: none;
     padding: 12px 24px;
     border-radius: 6px;
@@ -297,13 +297,13 @@ p {
 }
 
 .retry-button:hover {
-    background: #ff5252;
+    background: var(--color-error);
 }
 
 /* Plans Section */
 .back-link {
     display: inline-block;
-    color: #ffd700;
+    color: var(--color-accent-text);
     text-decoration: none;
     margin-bottom: 20px;
     font-size: 1rem;
@@ -315,14 +315,14 @@ p {
 }
 
 .plans-section h2 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 2rem;
     margin-bottom: 10px;
     text-align: center;
 }
 
 .plans-subtitle {
-    color: #aaa;
+    color: var(--text-secondary);
     font-size: 1.1rem;
     text-align: center;
     margin-bottom: 30px;
@@ -337,8 +337,8 @@ p {
 }
 
 .plan-card {
-    background: rgba(15, 52, 96, 0.2);
-    border: 2px solid #0f3460;
+    background: var(--bg-overlay-medium);
+    border: 2px solid var(--border-primary);
     border-radius: 12px;
     padding: 25px;
     text-align: center;
@@ -348,25 +348,25 @@ p {
 }
 
 .plan-card:hover {
-    border-color: #ffd700;
+    border-color: var(--color-accent-text);
     transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 /* Plan Card Variants */
 .plan-card.plan-trial {
-    border-color: #ff6b6b;
+    border-color: var(--color-error);
     box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
 }
 
 .plan-card.plan-popular {
-    border-color: #ffd700;
+    border-color: var(--color-accent-text);
     box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
     transform: scale(1.02);
 }
 
 .plan-card.plan-annual {
-    border-color: #4ade80;
+    border-color: #0f0;
     box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
 }
 
@@ -386,19 +386,19 @@ p {
 }
 
 .badge-special {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-    color: white;
+    background: linear-gradient(135deg, var(--color-error), var(--color-error));
+    color: var(--color-white);
     animation: pulseBadge 2s ease-in-out infinite;
 }
 
 .badge-popular {
-    background: linear-gradient(135deg, #ffd700, #ffed4a);
-    color: #1a1a2e;
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
+    color: var(--bg-primary);
 }
 
 .badge-value {
-    background: linear-gradient(135deg, #4ade80, #22c55e);
-    color: #1a1a2e;
+    background: linear-gradient(135deg, var(--color-success), var(--color-success));
+    color: var(--bg-primary);
 }
 
 @keyframes pulseBadge {
@@ -413,14 +413,14 @@ p {
     background: rgba(74, 222, 128, 0.15);
     border: 1px solid rgba(74, 222, 128, 0.4);
     border-radius: 20px;
-    color: #4ade80;
+    color: #0f0;
     font-size: 0.85rem;
     font-weight: bold;
 }
 
 /* Ritual Button */
 .btn-ritual {
-    background: linear-gradient(45deg, #8b0000, #b22222) !important;
+    background: linear-gradient(45deg, var(--color-error), var(--color-error)) !important;
     animation: pulseRitual 2s ease-in-out infinite;
 }
 
@@ -430,7 +430,7 @@ p {
 }
 
 .plan-card h3 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.5rem;
     margin-bottom: 15px;
 }
@@ -440,18 +440,18 @@ p {
 }
 
 .amount {
-    color: #f4f4f4;
+    color: var(--text-primary);
     font-size: 2.2rem;
     font-weight: bold;
 }
 
 .period {
-    color: #ccc;
+    color: var(--text-secondary);
     font-size: 1rem;
 }
 
 .description {
-    color: #ddd;
+    color: var(--text-secondary);
     margin-bottom: 20px;
     line-height: 1.5;
 }
@@ -466,12 +466,12 @@ p {
 .features li {
     margin-bottom: 8px;
     font-size: 0.95rem;
-    color: #ddd;
+    color: var(--text-secondary);
 }
 
 .select-button {
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
     border: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -488,7 +488,7 @@ p {
 }
 
 .select-button:disabled {
-    background: #666;
+    background: var(--text-tertiary);
     cursor: not-allowed;
     opacity: 0.6;
 }
@@ -502,14 +502,14 @@ p {
 .order-summary {
     margin-bottom: 30px;
     padding: 25px;
-    border: 1px solid #0f3460;
+    border: 1px solid var(--border-primary);
     border-radius: 12px;
-    background: rgba(15, 52, 96, 0.1);
+    background: var(--bg-overlay-light);
 }
 
 .order-summary h2 {
     font-size: 1.5rem;
-    color: #ffd700;
+    color: var(--color-accent-text);
     margin-bottom: 20px;
     text-align: center;
 }
@@ -522,12 +522,12 @@ p {
 }
 
 .selected-plan h3 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     margin-bottom: 5px;
 }
 
 .selected-plan p {
-    color: #ddd;
+    color: var(--text-secondary);
     margin: 0;
     font-size: 1rem;
 }
@@ -543,8 +543,8 @@ p {
 .order-total {
     font-weight: bold;
     font-size: 1.4rem;
-    color: #ffd700;
-    border-top: 1px solid #0f3460;
+    color: var(--color-accent-text);
+    border-top: 1px solid var(--border-primary);
     padding-top: 15px;
     margin-bottom: 0;
 }
@@ -555,7 +555,7 @@ p {
 }
 
 .payment-section h3 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.3rem;
     margin-bottom: 20px;
     text-align: center;
@@ -570,19 +570,19 @@ p {
 
 .payment-loading {
     background: rgba(255, 215, 0, 0.1);
-    border: 1px solid #ffd700;
-    color: #ffd700;
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .payment-error {
     background: rgba(255, 107, 107, 0.1);
-    border: 1px solid #ff6b6b;
-    color: #ff6b6b;
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
 }
 
 .clear-error {
-    background: #ff6b6b;
-    color: white;
+    background: var(--color-error);
+    color: var(--color-white);
     border: none;
     padding: 8px 16px;
     border-radius: 5px;
@@ -592,7 +592,7 @@ p {
 }
 
 .clear-error:hover {
-    background: #ff5252;
+    background: var(--color-error);
 }
 
 /* Action Buttons */
@@ -605,8 +605,8 @@ p {
 
 .back-button {
     background: rgba(255, 215, 0, 0.1);
-    color: #ffd700;
-    border: 1px solid #ffd700;
+    color: var(--color-accent-text);
+    border: 1px solid var(--color-accent);
     padding: 12px 20px;
     border-radius: 8px;
     cursor: pointer;
@@ -621,14 +621,14 @@ p {
 }
 
 .cancel-link {
-    color: #ccc;
+    color: var(--text-secondary);
     text-decoration: none;
     font-size: 1rem;
     transition: color 0.3s;
 }
 
 .cancel-link:hover {
-    color: #ffd700;
+    color: var(--color-accent-text);
 }
 
 /* Responsive Design */

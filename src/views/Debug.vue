@@ -75,14 +75,14 @@ const testApi = async () => {
 }
 
 .debug-info {
-  background: #f5f5f5;
+  background: var(--bg-primary);
   padding: 20px;
   border-radius: 8px;
   margin: 20px 0;
 }
 
 pre {
-  background: #000;
+  background: var(--color-black);
   color: #0f0;
   padding: 10px;
   border-radius: 4px;
@@ -92,13 +92,13 @@ pre {
 .api-result {
   margin-top: 20px;
   padding: 10px;
-  background: #e8f4f8;
+  background: var(--bg-elevated);
   border-radius: 4px;
 }
 
 button {
-  background: #007bff;
-  color: white;
+  background: var(--btn-secondary);
+  color: var(--color-white);
   border: none;
   padding: 10px 20px;
   border-radius: 4px;
@@ -106,7 +106,7 @@ button {
 }
 
 button:disabled {
-  background: #ccc;
+  background: var(--text-secondary);
   cursor: not-allowed;
 }
 </style>

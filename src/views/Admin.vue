@@ -217,8 +217,8 @@ function formatDate(dateStr) {
 <style scoped>
 .admin-container {
   min-height: 100vh;
-  background: #1a1a2e;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--color-white);
   padding: 20px;
 }
 
@@ -231,16 +231,16 @@ function formatDate(dateStr) {
 
 .login-box h1 {
   margin-bottom: 20px;
-  color: #d4af37;
+  color: var(--color-accent-text);
 }
 
 .password-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
-  background: #16213e;
-  color: #fff;
+  background: var(--bg-secondary);
+  color: var(--color-white);
   font-size: 16px;
   margin-bottom: 10px;
 }
@@ -248,8 +248,8 @@ function formatDate(dateStr) {
 .login-btn {
   width: 100%;
   padding: 12px;
-  background: #d4af37;
-  color: #000;
+  background: var(--color-accent);
+  color: var(--color-black);
   border: none;
   border-radius: 8px;
   font-weight: bold;
@@ -257,11 +257,11 @@ function formatDate(dateStr) {
 }
 
 .login-btn:hover {
-  background: #c4a030;
+  background: var(--color-accent);
 }
 
 .error {
-  color: #ff6b6b;
+  color: var(--color-error);
   margin-top: 10px;
 }
 
@@ -274,14 +274,14 @@ function formatDate(dateStr) {
 }
 
 .admin-header h1 {
-  color: #d4af37;
+  color: var(--color-accent-text);
 }
 
 .logout-btn {
   padding: 8px 16px;
   background: transparent;
-  border: 1px solid #666;
-  color: #fff;
+  border: 1px solid var(--border-primary);
+  color: var(--color-white);
   border-radius: 6px;
   cursor: pointer;
 }
@@ -295,7 +295,7 @@ function formatDate(dateStr) {
 }
 
 .stat-card {
-  background: #16213e;
+  background: var(--bg-secondary);
   padding: 20px;
   border-radius: 10px;
   text-align: center;
@@ -304,12 +304,12 @@ function formatDate(dateStr) {
 .stat-value {
   font-size: 28px;
   font-weight: bold;
-  color: #d4af37;
+  color: var(--color-accent-text);
 }
 
 .stat-label {
   font-size: 12px;
-  color: #888;
+  color: var(--text-tertiary);
   margin-top: 5px;
 }
 
@@ -322,16 +322,16 @@ function formatDate(dateStr) {
 
 .tabs button {
   padding: 10px 20px;
-  background: #16213e;
+  background: var(--bg-secondary);
   border: none;
-  color: #888;
+  color: var(--text-tertiary);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .tabs button.active {
-  background: #d4af37;
-  color: #000;
+  background: var(--color-accent);
+  color: var(--color-black);
 }
 
 /* Table */
@@ -342,7 +342,7 @@ function formatDate(dateStr) {
 table {
   width: 100%;
   border-collapse: collapse;
-  background: #16213e;
+  background: var(--bg-secondary);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -350,17 +350,17 @@ table {
 th, td {
   padding: 12px 15px;
   text-align: left;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 th {
-  background: #0f0f23;
-  color: #d4af37;
+  background: var(--bg-elevated);
+  color: var(--color-accent-text);
   font-weight: 600;
 }
 
 tr:hover {
-  background: #1e2a4a;
+  background: var(--bg-secondary);
 }
 
 .status {
@@ -370,29 +370,29 @@ tr:hover {
 }
 
 .status.active, .status.completed {
-  background: #2ecc71;
-  color: #000;
+  background: var(--color-success);
+  color: var(--color-black);
 }
 
 .status.inactive, .status.pending {
-  background: #e74c3c;
-  color: #fff;
+  background: var(--color-error);
+  color: var(--color-white);
 }
 
 .status.failed {
-  background: #95a5a6;
-  color: #fff;
+  background: var(--text-secondary);
+  color: var(--color-white);
 }
 
 .paypal-id {
   font-family: monospace;
   font-size: 11px;
-  color: #888;
+  color: var(--text-tertiary);
 }
 
 .empty {
   text-align: center;
-  color: #666;
+  color: var(--text-tertiary);
   padding: 40px;
 }
 </style>

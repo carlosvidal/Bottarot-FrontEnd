@@ -1,0 +1,192 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Volver",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "more": "Más",
+    "less": "Menos"
+  },
+  "nav": {
+    "newChat": "Nuevo Chat",
+    "profile": "Ver Perfil",
+    "logout": "Cerrar Sesión",
+    "upgradeToPremium": "Upgrade a Premium",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "cookies": "Cookies"
+  },
+  "sidebar": {
+    "newChat": "Nuevo Chat",
+    "history": "Historial",
+    "chatsThisWeek": "{count} chat restante esta semana | {count} chats restantes esta semana",
+    "weeklyLimitReached": "Límite semanal alcanzado",
+    "loadingChats": "Cargando chats...",
+    "noChats": "No hay chats recientes.",
+    "hiddenChats": "+{count} chats ocultos",
+    "unlockFullHistory": "Desbloquear historial completo",
+    "premiumActive": "Premium Activo",
+    "changeToLightMode": "Cambiar a modo claro",
+    "changeToDarkMode": "Cambiar a modo oscuro"
+  },
+  "chat": {
+    "untitled": "Chat sin título",
+    "placeholder": "Escribe tu pregunta aquí...",
+    "submit": "Realizar Tirada",
+    "thinking": "Pensando...",
+    "charCount": "{current} / {max}",
+    "favorite": "Favorito",
+    "share": "Compartir",
+    "rename": "Renombrar chat",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este chat? Esta acción no se puede deshacer.",
+    "deleteError": "No se pudo eliminar el chat.",
+    "renameError": "No se pudo renombrar el chat.",
+    "favoriteError": "No se pudo actualizar el estado de favorito."
+  },
+  "cards": {
+    "past": "Pasado",
+    "present": "Presente",
+    "future": "Futuro",
+    "inverted": "Invertida",
+    "hidden": "Oculto",
+    "futureHidden": "El futuro permanece velado hasta que reclames tu destino...",
+    "futureAwaits": "Tu futuro aguarda ser revelado",
+    "unlockFuture": "Desbloquear futuro",
+    "claimIdentity": "Reclamar mi identidad"
+  },
+  "reading": {
+    "oracleThinking": "El oráculo está meditando sobre tu destino...",
+    "listen": "Escuchar",
+    "pause": "Pausar",
+    "loading": "Cargando..."
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "signup": "Crear Cuenta",
+    "email": "Email",
+    "password": "Contraseña",
+    "continueWithGoogle": "Continuar con Google",
+    "continueWithFacebook": "Continuar con Facebook",
+    "or": "o",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "createAccount": "Crear cuenta",
+    "loginLink": "Iniciar sesión",
+    "passwordPlaceholder": "Tu contraseña",
+    "passwordMin": "Mínimo 6 caracteres",
+    "emailPlaceholder": "tu@email.com",
+    "completeAllFields": "Por favor completa todos los campos",
+    "checkEmailConfirm": "Revisa tu email para confirmar tu cuenta"
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Información de tu cuenta y preferencias.",
+    "loadingProfile": "Cargando perfil...",
+    "name": "Nombre",
+    "email": "Email",
+    "gender": "Género",
+    "dateOfBirth": "Fecha de nacimiento",
+    "timezone": "Zona horaria",
+    "language": "Idioma",
+    "memberSince": "Miembro desde",
+    "plan": "Plan",
+    "renewal": "Renovación",
+    "notSpecified": "No especificado",
+    "notAvailable": "No disponible",
+    "editProfile": "Editar Perfil",
+    "saveChanges": "Guardar Cambios",
+    "saving": "Guardando...",
+    "backToChat": "Volver al Chat",
+    "premiumUser": "Usuario Premium",
+    "genders": {
+      "male": "Masculino",
+      "female": "Femenino",
+      "nonBinary": "No binario",
+      "preferNotToSay": "Prefiero no decir",
+      "other": "Otro"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    },
+    "timezones": {
+      "mexicoCity": "Ciudad de México (GMT-6)",
+      "newYork": "Nueva York (GMT-5)",
+      "losAngeles": "Los Ángeles (GMT-8)",
+      "chicago": "Chicago (GMT-6)",
+      "denver": "Denver (GMT-7)",
+      "madrid": "Madrid (GMT+1)",
+      "london": "Londres (GMT+0)",
+      "bogota": "Bogotá (GMT-5)",
+      "lima": "Lima (GMT-5)",
+      "santiago": "Santiago (GMT-3)",
+      "buenosAires": "Buenos Aires (GMT-3)"
+    },
+    "zodiacSigns": {
+      "aries": "Aries",
+      "taurus": "Tauro",
+      "gemini": "Géminis",
+      "cancer": "Cáncer",
+      "leo": "Leo",
+      "virgo": "Virgo",
+      "libra": "Libra",
+      "scorpio": "Escorpio",
+      "sagittarius": "Sagitario",
+      "capricorn": "Capricornio",
+      "aquarius": "Acuario",
+      "pisces": "Piscis"
+    }
+  },
+  "landing": {
+    "welcome": "Bienvenido a Oráculo IA",
+    "subtitle": "Tu guía mística impulsada por inteligencia artificial",
+    "getStarted": "Comenzar",
+    "learnMore": "Saber más",
+    "features": {
+      "title": "Características",
+      "ai": "IA Avanzada",
+      "aiDesc": "Interpretaciones profundas y personalizadas",
+      "cards": "Cartas del Tarot",
+      "cardsDesc": "Selección de 78 cartas tradicionales",
+      "history": "Historial",
+      "historyDesc": "Guarda todas tus lecturas anteriores"
+    }
+  },
+  "checkout": {
+    "title": "Elige tu Plan",
+    "monthly": "Mensual",
+    "annual": "Anual",
+    "perMonth": "/ mes",
+    "perYear": "/ año",
+    "save": "Ahorra {percent}%",
+    "selectPlan": "Seleccionar Plan",
+    "currentPlan": "Plan Actual",
+    "processing": "Procesando...",
+    "features": {
+      "unlimited": "Chats ilimitados",
+      "fullHistory": "Historial completo",
+      "priority": "Soporte prioritario",
+      "advanced": "Interpretaciones avanzadas"
+    }
+  },
+  "errors": {
+    "generic": "Ha ocurrido un error",
+    "networkError": "Error de conexión",
+    "unauthorized": "No autorizado",
+    "notFound": "No encontrado",
+    "serverError": "Error del servidor"
+  },
+  "success": {
+    "saved": "Guardado exitosamente",
+    "updated": "Actualizado exitosamente",
+    "deleted": "Eliminado exitosamente"
+  }
+}

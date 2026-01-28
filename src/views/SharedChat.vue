@@ -92,15 +92,15 @@ onMounted(() => {
 <style scoped>
 .shared-chat-layout {
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-    color: #ccc;
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary));
+    color: var(--text-secondary);
 }
 
 /* Header */
 .shared-header {
-    background: rgba(15, 52, 96, 0.8);
+    background: var(--bg-input);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid #0f3460;
+    border-bottom: 1px solid var(--border-primary);
     padding: 20px;
 }
 
@@ -111,13 +111,13 @@ onMounted(() => {
 }
 
 .shared-header h1 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 2rem;
     margin-bottom: 8px;
 }
 
 .shared-header p {
-    color: #aaa;
+    color: var(--text-secondary);
     font-size: 1.1rem;
 }
 
@@ -137,8 +137,8 @@ onMounted(() => {
 .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid #0f3460;
-    border-top: 4px solid #ffd700;
+    border: 4px solid var(--border-primary);
+    border-top: 4px solid var(--color-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
@@ -156,7 +156,7 @@ onMounted(() => {
 }
 
 .error-message h2, .empty-message h2 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.8rem;
     margin-bottom: 15px;
 }
@@ -171,8 +171,8 @@ onMounted(() => {
 .home-link, .cta-button {
     display: inline-block;
     padding: 12px 24px;
-    background: linear-gradient(45deg, #ffd700, #ffed4e);
-    color: #1a1a2e;
+    background: linear-gradient(45deg, var(--color-accent), var(--color-accent-light));
+    color: var(--bg-primary);
     text-decoration: none;
     border-radius: 25px;
     font-weight: bold;
@@ -202,7 +202,7 @@ onMounted(() => {
 }
 
 .shared-footer p {
-    color: #aaa;
+    color: var(--text-secondary);
     margin-bottom: 20px;
     font-size: 0.95rem;
 }

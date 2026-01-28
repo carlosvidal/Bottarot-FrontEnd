@@ -3,9 +3,11 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase.js'
+import { useI18n } from 'vue-i18n'
 
 const auth = useAuthStore()
 const router = useRouter()
+const { locale, t } = useI18n()
 const userProfile = ref(null)
 const loading = ref(true)
 const editing = ref(false)
@@ -24,10 +26,13 @@ if (!auth.isLoggedIn) {
 }
 
 const formattedDate = computed(() => {
-    if (!userProfile.value?.date_of_birth) return 'No especificada'
+    if (!userProfile.value?.date_of_birth) return t('profile.notSpecified')
 
-    const date = new Date(userProfile.value.date_of_birth)
-    return date.toLocaleDateString('es-ES', {
+    // Parse date as local date to avoid timezone conversion issues
+    const [year, month, day] = userProfile.value.date_of_birth.split('-')
+    const date = new Date(year, month - 1, day)
+    const localeCode = locale.value === 'es' ? 'es-ES' : 'en-US'
+    return date.toLocaleDateString(localeCode, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -36,13 +41,60 @@ const formattedDate = computed(() => {
 
 const genderLabel = computed(() => {
     const genderMap = {
-        'male': 'Masculino',
-        'female': 'Femenino',
-        'non-binary': 'No binario',
-        'prefer-not-to-say': 'Prefiero no decir',
-        'other': 'Otro'
+        'male': t('profile.genders.male'),
+        'female': t('profile.genders.female'),
+        'non-binary': t('profile.genders.nonBinary'),
+        'prefer-not-to-say': t('profile.genders.preferNotToSay'),
+        'other': t('profile.genders.other')
     }
-    return genderMap[userProfile.value?.gender] || 'No especificado'
+    return genderMap[userProfile.value?.gender] || t('profile.notSpecified')
+})
+
+// Calculate zodiac sign from date of birth
+const getZodiacSign = (dateString) => {
+    if (!dateString) return null
+
+    const [year, month, day] = dateString.split('-').map(Number)
+
+    // Zodiac date ranges (month, day)
+    const zodiacSigns = [
+        { sign: 'capricorn', start: [12, 22], end: [1, 19] },
+        { sign: 'aquarius', start: [1, 20], end: [2, 18] },
+        { sign: 'pisces', start: [2, 19], end: [3, 20] },
+        { sign: 'aries', start: [3, 21], end: [4, 19] },
+        { sign: 'taurus', start: [4, 20], end: [5, 20] },
+        { sign: 'gemini', start: [5, 21], end: [6, 20] },
+        { sign: 'cancer', start: [6, 21], end: [7, 22] },
+        { sign: 'leo', start: [7, 23], end: [8, 22] },
+        { sign: 'virgo', start: [8, 23], end: [9, 22] },
+        { sign: 'libra', start: [9, 23], end: [10, 22] },
+        { sign: 'scorpio', start: [10, 23], end: [11, 21] },
+        { sign: 'sagittarius', start: [11, 22], end: [12, 21] }
+    ]
+
+    for (const zodiac of zodiacSigns) {
+        const [startMonth, startDay] = zodiac.start
+        const [endMonth, endDay] = zodiac.end
+
+        if (startMonth === endMonth) {
+            // Same month range
+            if (month === startMonth && day >= startDay && day <= endDay) {
+                return zodiac.sign
+            }
+        } else {
+            // Cross-month range
+            if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
+                return zodiac.sign
+            }
+        }
+    }
+
+    return null
+}
+
+const zodiacSign = computed(() => {
+    const sign = getZodiacSign(userProfile.value?.date_of_birth)
+    return sign ? t(`profile.zodiacSigns.${sign}`) : null
 })
 
 const loadUserProfile = async () => {
@@ -111,6 +163,10 @@ const saveProfile = async () => {
         console.error('Error updating profile:', error)
         // You could show an error message here
     } else {
+        // Update locale immediately
+        locale.value = editForm.value.language
+        localStorage.setItem('language', editForm.value.language)
+
         // Reload profile to get updated data
         await loadUserProfile()
         editing.value = false
@@ -129,15 +185,16 @@ watch(() => auth.user, (newUser) => {
 
 // Format date function
 const formatDate = (dateString) => {
-    if (!dateString) return 'No disponible'
+    if (!dateString) return t('profile.notAvailable')
     try {
-        return new Date(dateString).toLocaleDateString('es-ES', {
+        const localeCode = locale.value === 'es' ? 'es-ES' : 'en-US'
+        return new Date(dateString).toLocaleDateString(localeCode, {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         })
     } catch (error) {
-        return 'Fecha inválida'
+        return t('profile.notAvailable')
     }
 }
 
@@ -153,112 +210,113 @@ onMounted(() => {
 <template>
     <div class="legal-container">
         <div class="content">
-            <h1>Mi Perfil</h1>
-            <p>Información de tu cuenta y preferencias.</p>
+            <h1>{{ t('profile.title') }}</h1>
+            <p>{{ t('profile.subtitle') }}</p>
 
             <div v-if="loading" class="loading">
-                Cargando perfil...
+                {{ t('profile.loadingProfile') }}
             </div>
 
             <!-- View Mode -->
             <div v-else-if="!editing" class="profile-details">
                 <div class="profile-field">
-                    <strong>Nombre:</strong> {{ userProfile?.name || 'No especificado' }}
+                    <strong>{{ t('profile.name') }}:</strong> {{ userProfile?.name || t('profile.notSpecified') }}
                 </div>
                 <div class="profile-field">
-                    <strong>Email:</strong> {{ auth.user?.email || 'No disponible' }}
+                    <strong>{{ t('profile.email') }}:</strong> {{ auth.user?.email || t('profile.notAvailable') }}
                 </div>
                 <div class="profile-field">
-                    <strong>Género:</strong> {{ genderLabel }}
+                    <strong>{{ t('profile.gender') }}:</strong> {{ genderLabel }}
                 </div>
                 <div class="profile-field">
-                    <strong>Fecha de nacimiento:</strong> {{ formattedDate }}
+                    <strong>{{ t('profile.dateOfBirth') }}:</strong> {{ formattedDate }}
+                    <span v-if="zodiacSign" class="zodiac-sign">♈ {{ zodiacSign }}</span>
                 </div>
                 <div class="profile-field">
-                    <strong>Zona horaria:</strong> {{ userProfile?.timezone || 'No especificada' }}
+                    <strong>{{ t('profile.timezone') }}:</strong> {{ userProfile?.timezone || t('profile.notSpecified') }}
                 </div>
                 <div class="profile-field">
-                    <strong>Idioma:</strong> {{ userProfile?.language === 'es' ? 'Español' : userProfile?.language === 'en' ? 'English' : 'No especificado' }}
+                    <strong>{{ t('profile.language') }}:</strong> {{ t('profile.languages.' + (userProfile?.language || 'es')) }}
                 </div>
                 <div class="profile-field">
-                    <strong>Miembro desde:</strong> {{ userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString('es-ES') : 'No disponible' }}
+                    <strong>{{ t('profile.memberSince') }}:</strong> {{ userProfile?.created_at ? formatDate(userProfile.created_at) : t('profile.notAvailable') }}
                 </div>
                 <div class="profile-field">
-                    <strong>Plan:</strong> {{ auth.currentPlan }}
+                    <strong>{{ t('profile.plan') }}:</strong> {{ auth.currentPlan }}
                     <span v-if="auth.isPremiumUser && auth.userSubscription?.subscription_end_date" class="subscription-info">
-                        (Renovación: {{ formatDate(auth.userSubscription.subscription_end_date) }})
+                        ({{ t('profile.renewal') }}: {{ formatDate(auth.userSubscription.subscription_end_date) }})
                     </span>
                 </div>
             </div>
 
             <!-- Edit Mode -->
             <div v-else class="edit-form">
-                <h2>Editar Perfil</h2>
+                <h2>{{ t('profile.editProfile') }}</h2>
                 <form @submit.prevent="saveProfile" class="profile-form">
                     <div class="form-group">
-                        <label for="edit-name">Nombre</label>
+                        <label for="edit-name">{{ t('profile.name') }}</label>
                         <input type="text" id="edit-name" v-model="editForm.name" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-gender">Género</label>
+                        <label for="edit-gender">{{ t('profile.gender') }}</label>
                         <select id="edit-gender" v-model="editForm.gender">
-                            <option value="male">Masculino</option>
-                            <option value="female">Femenino</option>
-                            <option value="non-binary">No binario</option>
-                            <option value="prefer-not-to-say">Prefiero no decir</option>
-                            <option value="other">Otro</option>
+                            <option value="male">{{ t('profile.genders.male') }}</option>
+                            <option value="female">{{ t('profile.genders.female') }}</option>
+                            <option value="non-binary">{{ t('profile.genders.nonBinary') }}</option>
+                            <option value="prefer-not-to-say">{{ t('profile.genders.preferNotToSay') }}</option>
+                            <option value="other">{{ t('profile.genders.other') }}</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-dob">Fecha de Nacimiento</label>
+                        <label for="edit-dob">{{ t('profile.dateOfBirth') }}</label>
                         <input type="date" id="edit-dob" v-model="editForm.dateOfBirth">
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-timezone">Zona Horaria</label>
+                        <label for="edit-timezone">{{ t('profile.timezone') }}</label>
                         <select id="edit-timezone" v-model="editForm.timezone">
-                            <option value="America/Mexico_City">Ciudad de México (GMT-6)</option>
-                            <option value="America/New_York">Nueva York (GMT-5)</option>
-                            <option value="America/Los_Angeles">Los Ángeles (GMT-8)</option>
-                            <option value="America/Chicago">Chicago (GMT-6)</option>
-                            <option value="America/Denver">Denver (GMT-7)</option>
-                            <option value="Europe/Madrid">Madrid (GMT+1)</option>
-                            <option value="Europe/London">Londres (GMT+0)</option>
-                            <option value="America/Bogota">Bogotá (GMT-5)</option>
-                            <option value="America/Lima">Lima (GMT-5)</option>
-                            <option value="America/Santiago">Santiago (GMT-3)</option>
-                            <option value="America/Buenos_Aires">Buenos Aires (GMT-3)</option>
+                            <option value="America/Mexico_City">{{ t('profile.timezones.mexicoCity') }}</option>
+                            <option value="America/New_York">{{ t('profile.timezones.newYork') }}</option>
+                            <option value="America/Los_Angeles">{{ t('profile.timezones.losAngeles') }}</option>
+                            <option value="America/Chicago">{{ t('profile.timezones.chicago') }}</option>
+                            <option value="America/Denver">{{ t('profile.timezones.denver') }}</option>
+                            <option value="Europe/Madrid">{{ t('profile.timezones.madrid') }}</option>
+                            <option value="Europe/London">{{ t('profile.timezones.london') }}</option>
+                            <option value="America/Bogota">{{ t('profile.timezones.bogota') }}</option>
+                            <option value="America/Lima">{{ t('profile.timezones.lima') }}</option>
+                            <option value="America/Santiago">{{ t('profile.timezones.santiago') }}</option>
+                            <option value="America/Buenos_Aires">{{ t('profile.timezones.buenosAires') }}</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-language">Idioma</label>
+                        <label for="edit-language">{{ t('profile.language') }}</label>
                         <select id="edit-language" v-model="editForm.language">
-                            <option value="es">Español</option>
-                            <option value="en">English</option>
+                            <option value="es">{{ t('profile.languages.es') }}</option>
+                            <option value="en">{{ t('profile.languages.en') }}</option>
                         </select>
                     </div>
 
                     <div class="form-actions">
                         <button type="submit" class="save-button" :disabled="saving">
-                            {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+                            {{ saving ? t('profile.saving') : t('profile.saveChanges') }}
                         </button>
                         <button type="button" @click="cancelEditing" class="cancel-button" :disabled="saving">
-                            Cancelar
+                            {{ t('common.cancel') }}
                         </button>
                     </div>
                 </form>
             </div>
 
             <div class="actions">
-                <router-link to="/chat" class="back-button">Volver al Chat</router-link>
-                <button v-if="!editing" @click="startEditing" class="edit-button">Editar Perfil</button>
-                <router-link v-if="!auth.isPremiumUser" to="/checkout" class="upgrade-button">Upgrade a Premium</router-link>
+                <router-link to="/chat" class="back-button">{{ t('profile.backToChat') }}</router-link>
+                <button v-if="!editing" @click="startEditing" class="edit-button">{{ t('profile.editProfile') }}</button>
+                <router-link v-if="!auth.isPremiumUser" to="/checkout" class="upgrade-button">{{ t('nav.upgradeToPremium') }}</router-link>
                 <div v-else class="premium-status">
-                    <span class="premium-badge">✨ Usuario Premium</span>
-                    <p class="renewal-info">Renovación: {{ formatDate(auth.userSubscription?.subscription_end_date) }}</p>
+                    <span class="premium-badge">✨ {{ t('profile.premiumUser') }}</span>
+                    <p class="renewal-info">{{ t('profile.renewal') }}: {{ formatDate(auth.userSubscription?.subscription_end_date) }}</p>
                 </div>
             </div>
         </div>
@@ -267,21 +325,21 @@ onMounted(() => {
 
 <style scoped>
 .legal-container {
-    font-family: 'Georgia', serif;
-    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-    color: #f4f4f4;
+    font-family: var(--font-content);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary));
+    color: var(--text-primary);
     min-height: 100vh;
     padding: 40px 20px;
 }
 .content {
     max-width: 800px;
     margin: 0 auto;
-    background: rgba(22, 33, 62, 0.5);
+    background: var(--bg-overlay-strong);
     padding: 30px;
     border-radius: 10px;
 }
 h1 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 2.5rem;
     margin-bottom: 20px;
 }
@@ -292,7 +350,7 @@ p {
 }
 .loading {
     text-align: center;
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.1rem;
     margin: 40px 0;
 }
@@ -300,15 +358,15 @@ p {
 .profile-details {
     margin-top: 30px;
     padding: 20px;
-    border: 1px solid #0f3460;
+    border: 1px solid var(--border-primary);
     border-radius: 8px;
-    background: rgba(15, 52, 96, 0.2);
+    background: var(--bg-overlay-medium);
 }
 
 .profile-field {
     margin-bottom: 15px;
     padding: 10px 0;
-    border-bottom: 1px solid rgba(15, 52, 96, 0.3);
+    border-bottom: 1px solid var(--border-subtle);
     font-size: 1.1rem;
 }
 
@@ -318,7 +376,7 @@ p {
 }
 
 .profile-field strong {
-    color: #ffd700;
+    color: var(--color-accent-text);
     display: inline-block;
     min-width: 180px;
 }
@@ -331,8 +389,8 @@ p {
 }
 
 .back-button {
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
     text-decoration: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -345,8 +403,8 @@ p {
 }
 
 .upgrade-button {
-    background: linear-gradient(145deg, #ffd700, #ffed4a);
-    color: #1a1a2e;
+    background: linear-gradient(145deg, var(--color-accent), var(--color-accent-light));
+    color: var(--bg-primary);
     text-decoration: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -356,14 +414,14 @@ p {
 }
 
 .upgrade-button:hover {
-    background: linear-gradient(145deg, #ffed4a, #ffd700);
+    background: linear-gradient(145deg, var(--color-accent-light), var(--color-accent));
     transform: translateY(-2px);
 }
 
 .edit-button {
     background: rgba(255, 215, 0, 0.1);
-    color: #ffd700;
-    border: 1px solid #ffd700;
+    color: var(--color-accent-text);
+    border: 1px solid var(--color-accent);
     text-decoration: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -381,13 +439,13 @@ p {
 .edit-form {
     margin-top: 30px;
     padding: 30px;
-    border: 1px solid #0f3460;
+    border: 1px solid var(--border-primary);
     border-radius: 8px;
-    background: rgba(15, 52, 96, 0.1);
+    background: var(--bg-overlay-light);
 }
 
 .edit-form h2 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.8rem;
     margin-bottom: 25px;
 }
@@ -405,7 +463,7 @@ p {
 }
 
 .form-group label {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-weight: 500;
     font-size: 1rem;
 }
@@ -413,10 +471,10 @@ p {
 .form-group input,
 .form-group select {
     padding: 12px 16px;
-    border: 1px solid #0f3460;
+    border: 1px solid var(--border-primary);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.05);
-    color: #f4f4f4;
+    color: var(--text-primary);
     font-size: 1rem;
     transition: all 0.3s ease;
 }
@@ -424,7 +482,7 @@ p {
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #ffd700;
+    border-color: var(--color-accent-text);
     background: rgba(255, 255, 255, 0.08);
 }
 
@@ -436,8 +494,8 @@ p {
 }
 
 .save-button {
-    background: linear-gradient(145deg, #ffd700, #ffed4a);
-    color: #1a1a2e;
+    background: linear-gradient(145deg, var(--color-accent), var(--color-accent-light));
+    color: var(--bg-primary);
     border: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -448,7 +506,7 @@ p {
 }
 
 .save-button:hover:not(:disabled) {
-    background: linear-gradient(145deg, #ffed4a, #ffd700);
+    background: linear-gradient(145deg, var(--color-accent-light), var(--color-accent));
     transform: translateY(-2px);
 }
 
@@ -460,8 +518,8 @@ p {
 
 .cancel-button {
     background: rgba(255, 107, 107, 0.1);
-    color: #ff6b6b;
-    border: 1px solid #ff6b6b;
+    color: var(--color-error);
+    border: 1px solid var(--color-error);
     padding: 12px 25px;
     border-radius: 8px;
     cursor: pointer;
@@ -485,11 +543,11 @@ p {
     padding: 15px;
     border-radius: 12px;
     background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 237, 74, 0.1));
-    border: 2px solid #ffd700;
+    border: 2px solid var(--color-accent);
 }
 
 .premium-badge {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.2rem;
     font-weight: bold;
     display: block;
@@ -497,15 +555,27 @@ p {
 }
 
 .renewal-info {
-    color: #ddd;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin: 0;
 }
 
 .subscription-info {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 0.85rem;
     font-style: italic;
     margin-left: 8px;
+}
+
+.zodiac-sign {
+    display: inline-block;
+    margin-left: 12px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 237, 74, 0.1));
+    border: 1px solid var(--color-accent);
+    border-radius: 6px;
+    color: var(--color-accent-text);
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 </style>

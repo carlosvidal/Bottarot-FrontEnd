@@ -223,14 +223,14 @@ const handleSignup = async (event) => {
 </template>
 
 <style scoped>
-.landing-container { display: flex; flex-direction: column; min-height: 100vh; font-family: 'Georgia', serif; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); color: #f4f4f4; text-align: center; padding: 20px; }
+.landing-container { display: flex; flex-direction: column; min-height: 100vh; font-family: var(--font-content); background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary)); color: var(--text-primary); text-align: center; padding: 20px; }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; max-width: 800px; margin: 0 auto; }
-.title { font-size: 3.5rem; color: #ffd700; text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.6); margin-bottom: 15px; }
-.subtitle { font-size: 1.3rem; color: #ddd; font-style: italic; margin-bottom: 40px; line-height: 1.6; }
+.title { font-size: 3.5rem; color: var(--color-accent-text); text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.6); margin-bottom: 15px; }
+.subtitle { font-size: 1.3rem; color: var(--text-secondary); font-style: italic; margin-bottom: 40px; line-height: 1.6; }
 
 
 /* CTA */
-.main-cta-button { background: linear-gradient(45deg, #8b4513, #a0522d); color: white; text-decoration: none; padding: 18px 40px; font-size: 1.4rem; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); display: inline-block; border: none; }
+.main-cta-button { background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover)); color: var(--color-white); text-decoration: none; padding: 18px 40px; font-size: 1.4rem; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); display: inline-block; border: none; }
 .main-cta-button:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); }
 .main-cta-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -242,8 +242,8 @@ const handleSignup = async (event) => {
 
 .try-button {
     display: inline-block;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-secondary), var(--btn-secondary-hover));
+    color: var(--color-white);
     text-decoration: none;
     padding: 18px 40px;
     font-size: 1.3rem;
@@ -261,7 +261,7 @@ const handleSignup = async (event) => {
 .try-note {
     margin-top: 12px;
     font-size: 0.9rem;
-    color: #888;
+    color: var(--text-tertiary);
     font-style: italic;
 }
 
@@ -281,7 +281,7 @@ const handleSignup = async (event) => {
 }
 
 .divider-text {
-    color: #666;
+    color: var(--text-tertiary);
     font-size: 0.9rem;
 }
 
@@ -289,18 +289,18 @@ const handleSignup = async (event) => {
 .social-login { margin-bottom: 40px; }
 .register-title {
     font-size: 1.3rem;
-    color: #ffd700;
+    color: var(--color-accent-text);
     margin-bottom: 8px;
     font-weight: bold;
 }
 .register-benefit {
     font-size: 1rem;
-    color: #aaa;
+    color: var(--text-secondary);
     margin-bottom: 20px;
     font-style: italic;
 }
 .social-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-.social-btn { border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; color: white; font-weight: 500; }
+.social-btn { border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; color: var(--color-white); font-weight: 500; }
 .social-btn.google { background-color: #DB4437; }
 .social-btn.facebook { background-color: #4267B2; }
 .social-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); }
@@ -308,13 +308,13 @@ const handleSignup = async (event) => {
 
 /* Offers */
 .offer-section { margin-bottom: 40px; }
-.offer-section h2 { font-size: 2rem; color: #ffd700; margin-bottom: 25px; }
+.offer-section h2 { font-size: 2rem; color: var(--color-accent-text); margin-bottom: 25px; }
 .offers { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
 .offer-card {
-    background: rgba(22, 33, 62, 0.6);
+    background: var(--bg-overlay);
     padding: 25px 20px;
     border-radius: 15px;
-    border: 2px solid #0f3460;
+    border: 2px solid var(--border-primary);
     width: 220px;
     text-align: center;
     position: relative;
@@ -325,10 +325,10 @@ const handleSignup = async (event) => {
     border-color: rgba(255, 215, 0, 0.5);
 }
 .offer-card.free-tier {
-    border-color: #555;
+    border-color: var(--text-tertiary);
 }
 .offer-card.premium {
-    border-color: #ff6b6b;
+    border-color: var(--color-error);
     box-shadow: 0 0 25px rgba(255, 107, 107, 0.4);
 }
 .offer-badge {
@@ -336,8 +336,8 @@ const handleSignup = async (event) => {
     top: -10px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-    color: white;
+    background: linear-gradient(135deg, var(--color-error), var(--color-error));
+    color: var(--color-white);
     padding: 5px 15px;
     border-radius: 15px;
     font-size: 0.7rem;
@@ -348,16 +348,16 @@ const handleSignup = async (event) => {
     font-size: 2.5rem;
     margin-bottom: 10px;
 }
-.offer-card h3 { font-size: 1.3rem; margin-bottom: 8px; color: #e0e0e0; }
+.offer-card h3 { font-size: 1.3rem; margin-bottom: 8px; color: var(--text-primary); }
 .offer-price {
     font-size: 1.8rem;
-    color: #ffd700;
+    color: var(--color-accent-text);
     margin-bottom: 15px;
 }
 .offer-price strong { font-size: 2rem; }
 .price-period {
     font-size: 0.9rem;
-    color: #aaa;
+    color: var(--text-secondary);
 }
 .offer-features {
     list-style: none;
@@ -367,7 +367,7 @@ const handleSignup = async (event) => {
 }
 .offer-features li {
     padding: 5px 0;
-    color: #ccc;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -379,24 +379,24 @@ const handleSignup = async (event) => {
 
 /* Sign-up Form */
 .signup-form-container { max-width: 500px; margin: 0 auto; }
-.signup-title { font-size: 2.5rem; color: #ffd700; margin-bottom: 10px; }
+.signup-title { font-size: 2.5rem; color: var(--color-accent-text); margin-bottom: 10px; }
 .signup-form { display: flex; flex-direction: column; gap: 20px; text-align: left; }
 .form-group { display: flex; flex-direction: column; }
-.form-group label { margin-bottom: 8px; font-size: 1rem; color: #ccc; }
-.form-group input[type="text"], .form-group input[type="date"], .form-group select { width: 100%; padding: 12px; font-size: 1rem; background-color: rgba(22, 33, 62, 0.7); border: 1px solid #0f3460; border-radius: 5px; color: #f4f4f4; }
+.form-group label { margin-bottom: 8px; font-size: 1rem; color: var(--text-secondary); }
+.form-group input[type="text"], .form-group input[type="date"], .form-group select { width: 100%; padding: 12px; font-size: 1rem; background-color: var(--bg-input); border: 1px solid var(--border-primary); border-radius: 5px; color: var(--text-primary); }
 .form-group.terms { flex-direction: row; align-items: center; gap: 10px; justify-content: center; }
 .form-group.terms label { margin-bottom: 0; }
-.form-group.terms a { color: #ffd700; text-decoration: none; }
+.form-group.terms a { color: var(--color-accent-text); text-decoration: none; }
 .form-group.terms a:hover { text-decoration: underline; }
 
 /* Disclaimer & Footer */
-.disclaimer { font-size: 0.9rem; color: #aaa; max-width: 600px; margin: 40px auto; font-style: italic; line-height: 1.6; }
-.disclaimer-button { background: none; border: none; color: #ffd700; cursor: pointer; font-style: italic; text-decoration: underline; padding: 0 5px; font-size: 0.9rem; }
+.disclaimer { font-size: 0.9rem; color: var(--text-secondary); max-width: 600px; margin: 40px auto; font-style: italic; line-height: 1.6; }
+.disclaimer-button { background: none; border: none; color: var(--color-accent-text); cursor: pointer; font-style: italic; text-decoration: underline; padding: 0 5px; font-size: 0.9rem; }
 .disclaimer-more { margin-top: 15px; text-align: justify; }
 
-.footer { padding: 15px; border-top: 1px solid #0f3460; }
-.footer a, .footer .router-link-active { color: #ccc; text-decoration: none; margin: 0 15px; transition: color 0.3s; }
-.footer a:hover, .footer .router-link-active:hover { color: #ffd700; }
-.footer span { color: #555; }
+.footer { padding: 15px; border-top: 1px solid var(--border-primary); }
+.footer a, .footer .router-link-active { color: var(--text-secondary); text-decoration: none; margin: 0 15px; transition: color 0.3s; }
+.footer a:hover, .footer .router-link-active:hover { color: var(--color-accent-text); }
+.footer span { color: var(--text-tertiary); }
 
 </style>

@@ -49,8 +49,105 @@ const calculateAge = (dateOfBirth) => {
   return age
 }
 
-// Obtener información temporal basada en zona horaria
-const getTimeContext = (timezone = 'America/Mexico_City') => {
+// Calcular signo zodiacal basado en fecha de nacimiento
+const getZodiacSign = (dateOfBirth) => {
+  if (!dateOfBirth) return null
+
+  const date = new Date(dateOfBirth)
+  const month = date.getMonth() + 1 // 1-12
+  const day = date.getDate()
+
+  // Zodiac date ranges
+  const zodiacSigns = [
+    { sign: 'Capricornio', start: [12, 22], end: [1, 19] },
+    { sign: 'Acuario', start: [1, 20], end: [2, 18] },
+    { sign: 'Piscis', start: [2, 19], end: [3, 20] },
+    { sign: 'Aries', start: [3, 21], end: [4, 19] },
+    { sign: 'Tauro', start: [4, 20], end: [5, 20] },
+    { sign: 'Géminis', start: [5, 21], end: [6, 20] },
+    { sign: 'Cáncer', start: [6, 21], end: [7, 22] },
+    { sign: 'Leo', start: [7, 23], end: [8, 22] },
+    { sign: 'Virgo', start: [8, 23], end: [9, 22] },
+    { sign: 'Libra', start: [9, 23], end: [10, 22] },
+    { sign: 'Escorpio', start: [10, 23], end: [11, 21] },
+    { sign: 'Sagitario', start: [11, 22], end: [12, 21] }
+  ]
+
+  for (const zodiac of zodiacSigns) {
+    const [startMonth, startDay] = zodiac.start
+    const [endMonth, endDay] = zodiac.end
+
+    if (startMonth === endMonth) {
+      // Same month range
+      if (month === startMonth && day >= startDay && day <= endDay) {
+        return zodiac.sign
+      }
+    } else {
+      // Cross-month range
+      if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
+        return zodiac.sign
+      }
+    }
+  }
+
+  return null
+}
+
+// Solicitar y obtener ubicación del usuario
+const getUserLocation = async () => {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      console.warn('Geolocalización no disponible en este navegador')
+      resolve(null)
+      return
+    }
+
+    // Intentar obtener de localStorage primero (cache)
+    const cachedLocation = localStorage.getItem('userLocation')
+    if (cachedLocation) {
+      try {
+        const location = JSON.parse(cachedLocation)
+        // Verificar que el cache no sea muy antiguo (más de 24 horas)
+        if (location.timestamp && (Date.now() - location.timestamp) < 24 * 60 * 60 * 1000) {
+          resolve(location)
+          return
+        }
+      } catch (e) {
+        console.error('Error parseando ubicación cacheada:', e)
+      }
+    }
+
+    // Solicitar ubicación con timeout
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          timestamp: Date.now()
+        }
+        // Guardar en localStorage
+        localStorage.setItem('userLocation', JSON.stringify(location))
+        resolve(location)
+      },
+      (error) => {
+        console.warn('No se pudo obtener la ubicación:', error.message)
+        resolve(null)
+      },
+      {
+        timeout: 5000,
+        maximumAge: 24 * 60 * 60 * 1000 // Cache de 24 horas
+      }
+    )
+  })
+}
+
+// Determinar hemisferio basado en latitud
+const getHemisphere = (latitude) => {
+  return latitude >= 0 ? 'norte' : 'sur'
+}
+
+// Obtener información temporal basada en zona horaria y ubicación
+const getTimeContext = async (timezone = 'America/Mexico_City', location = null) => {
   const now = new Date()
 
   // Crear fecha en la zona horaria del usuario
@@ -65,23 +162,54 @@ const getTimeContext = (timezone = 'America/Mexico_City') => {
     greeting = 'Buenas noches'
   }
 
-  // Determinar estación del año (hemisferio norte por defecto)
+  // Determinar estación del año basada en hemisferio
   const month = userTime.getMonth() + 1
+  let hemisphere = 'norte' // Default
+
+  // Intentar obtener ubicación si no se proporcionó
+  if (!location) {
+    location = await getUserLocation()
+  }
+
+  if (location && location.latitude !== undefined) {
+    hemisphere = getHemisphere(location.latitude)
+  }
+
+  // Estaciones según hemisferio
   let season = 'invierno'
-  if (month >= 3 && month <= 5) {
-    season = 'primavera'
-  } else if (month >= 6 && month <= 8) {
-    season = 'verano'
-  } else if (month >= 9 && month <= 11) {
-    season = 'otoño'
+  if (hemisphere === 'norte') {
+    // Hemisferio Norte
+    if (month >= 3 && month <= 5) {
+      season = 'primavera'
+    } else if (month >= 6 && month <= 8) {
+      season = 'verano'
+    } else if (month >= 9 && month <= 11) {
+      season = 'otoño'
+    }
+  } else {
+    // Hemisferio Sur (estaciones invertidas)
+    if (month >= 3 && month <= 5) {
+      season = 'otoño'
+    } else if (month >= 6 && month <= 8) {
+      season = 'invierno'
+    } else if (month >= 9 && month <= 11) {
+      season = 'primavera'
+    } else {
+      season = 'verano'
+    }
   }
 
   return {
     greeting,
     season,
+    hemisphere,
     hour: hours,
     date: userTime.toLocaleDateString('es-ES'),
-    time: userTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    time: userTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    location: location ? {
+      latitude: location.latitude,
+      longitude: location.longitude
+    } : null
   }
 }
 
@@ -153,21 +281,29 @@ export const generatePersonalContext = async () => {
     }
 
     const age = calculateAge(profile.date_of_birth)
-    const timeContext = getTimeContext(profile.timezone)
+    const zodiacSign = getZodiacSign(profile.date_of_birth)
+
+    // Obtener ubicación del usuario
+    const location = await getUserLocation()
+
+    // Obtener contexto temporal (ahora es async)
+    const timeContext = await getTimeContext(profile.timezone, location)
     const specialDates = getSpecialDates(profile.date_of_birth, profile.timezone)
 
     // Construir contexto personalizado
     let context = `INFORMACIÓN PERSONAL DEL CONSULTANTE:
 - Nombre: ${profile.name}
 - Edad: ${age ? `${age} años` : 'No especificada'}
+- Signo Zodiacal: ${zodiacSign || 'No especificado'}
 - Género: ${profile.gender || 'No especificado'}
 - Idioma preferido: ${profile.language || 'español'}
 - Zona horaria: ${profile.timezone || 'No especificada'}
+${timeContext.location ? `- Ubicación: Hemisferio ${timeContext.hemisphere}` : ''}
 
 CONTEXTO TEMPORAL:
 - ${timeContext.greeting}, son las ${timeContext.time}
 - Fecha actual: ${timeContext.date}
-- Estación del año: ${timeContext.season}
+- Estación del año: ${timeContext.season} (Hemisferio ${timeContext.hemisphere})
 
 ${specialDates.length > 0 ? `FECHAS ESPECIALES:
 ${specialDates.map(date => `- ${date}`).join('\n')}
@@ -175,7 +311,8 @@ ${specialDates.map(date => `- ${date}`).join('\n')}
 
 INSTRUCCIONES PARA LA INTERPRETACIÓN:
 - Saluda al consultante por su nombre usando el saludo apropiado para la hora
-- Considera su edad para ajustar el tono y los consejos
+- Considera su edad y signo zodiacal para ajustar el tono y los consejos
+- Incorpora elementos del signo zodiacal en la interpretación cuando sea relevante
 - Ten en cuenta las fechas especiales si son relevantes para la consulta
 - Usa un lenguaje apropiado para su género y edad
 - Mantén un tono místico pero personal y cercano`
@@ -186,6 +323,7 @@ INSTRUCCIONES PARA LA INTERPRETACIÓN:
       profile: {
         name: profile.name,
         age,
+        zodiacSign,
         gender: profile.gender,
         language: profile.language,
         timezone: profile.timezone

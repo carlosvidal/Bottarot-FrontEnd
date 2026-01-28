@@ -76,7 +76,7 @@ const handleClose = () => {
 }
 
 .modal-content {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
     border: 2px solid rgba(255, 215, 0, 0.3);
     border-radius: 20px;
     padding: 40px;
@@ -119,7 +119,7 @@ const handleClose = () => {
 }
 
 .modal-header h2 {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1.5rem;
     font-weight: bold;
     margin: 0;
@@ -127,7 +127,7 @@ const handleClose = () => {
 }
 
 .modal-body {
-    color: #e0e0e0;
+    color: var(--text-primary);
     margin-bottom: 30px;
 }
 
@@ -140,7 +140,7 @@ const handleClose = () => {
 
 .sub-message {
     font-size: 0.95rem;
-    color: #aaa;
+    color: var(--text-secondary);
     margin-bottom: 20px;
 }
 
@@ -170,7 +170,7 @@ const handleClose = () => {
 
 .premium-hint {
     font-size: 1rem;
-    color: #ddd;
+    color: var(--text-secondary);
 }
 
 .modal-actions {
@@ -180,9 +180,9 @@ const handleClose = () => {
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
-    border: 2px solid #ffd700;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
+    border: 2px solid var(--color-accent);
     padding: 14px 28px;
     font-size: 1.1rem;
     border-radius: 30px;
@@ -195,12 +195,12 @@ const handleClose = () => {
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
-    background: linear-gradient(45deg, #a0522d, #cd853f);
+    background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
 }
 
 .btn-secondary {
     background: transparent;
-    color: #aaa;
+    color: var(--text-secondary);
     border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 12px 24px;
     font-size: 1rem;
@@ -210,7 +210,7 @@ const handleClose = () => {
 }
 
 .btn-secondary:hover {
-    color: #ffd700;
+    color: var(--color-accent-text);
     border-color: rgba(255, 215, 0, 0.4);
 }
 
@@ -220,7 +220,7 @@ const handleClose = () => {
     right: 15px;
     background: none;
     border: none;
-    color: #aaa;
+    color: var(--text-secondary);
     font-size: 1.8rem;
     cursor: pointer;
     transition: color 0.3s;
@@ -229,7 +229,7 @@ const handleClose = () => {
 }
 
 .close-btn:hover {
-    color: #ffd700;
+    color: var(--color-accent-text);
 }
 
 @media (max-width: 480px) {

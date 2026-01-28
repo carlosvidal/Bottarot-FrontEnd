@@ -4,8 +4,10 @@ import { useChatStore } from '../stores/chats';
 import { useAuthStore } from '../stores/auth';
 import { useRoute, useRouter } from 'vue-router';
 import { Star, Share2, Trash2, Pencil, Check, X } from 'lucide-vue-next';
+import { useI18n } from 'vue-i18n';
 
 defineEmits(['share-chat']);
+const { t } = useI18n();
 
 const chatStore = useChatStore();
 const auth = useAuthStore();
@@ -34,7 +36,7 @@ const saveRename = async () => {
         await chatStore.renameChat(currentChat.value.id, newTitle.value, auth.user.id);
     } catch (error) {
         console.error('Failed to rename chat:', error);
-        alert('No se pudo renombrar el chat.');
+        alert(t('chat.renameError'));
     } finally {
         isRenaming.value = false;
     }
@@ -48,13 +50,13 @@ const cancelRename = () => {
 const deleteCurrentChat = async () => {
     const chatId = route.params.chatId;
     if (!chatId || !auth.user) return;
-    if (window.confirm('¿Estás seguro de que quieres eliminar este chat? Esta acción no se puede deshacer.')) {
+    if (window.confirm(t('chat.deleteConfirm'))) {
         try {
             await chatStore.deleteChat(chatId, auth.user.id);
             router.push({ name: 'new-chat' });
         } catch (error) {
             console.error('Failed to delete chat:', error);
-            alert('No se pudo eliminar el chat.');
+            alert(t('chat.deleteError'));
         }
     }
 };
@@ -62,7 +64,7 @@ const deleteCurrentChat = async () => {
 const toggleFavorite = () => {
     if (!currentChat.value || !auth.user) return;
     chatStore.toggleFavorite(currentChat.value.id, auth.user.id).catch(error => {
-        alert('No se pudo actualizar el estado de favorito.');
+        alert(t('chat.favoriteError'));
     });
 };
 </script>
@@ -73,8 +75,8 @@ const toggleFavorite = () => {
             <slot name="menu-button"></slot>
             <div v-if="currentChat" class="title-container">
                 <template v-if="!isRenaming">
-                    <h2 class="chat-title">{{ currentChat.title || 'Chat sin título' }}</h2>
-                    <button @click="startRename" class="icon-btn rename-btn" title="Renombrar chat">
+                    <h2 class="chat-title">{{ currentChat.title || t('chat.untitled') }}</h2>
+                    <button @click="startRename" class="icon-btn rename-btn" :title="t('chat.rename')">
                         <Pencil :size="16" />
                     </button>
                 </template>
@@ -86,10 +88,10 @@ const toggleFavorite = () => {
                         @keyup.enter="saveRename"
                         @keyup.esc="cancelRename"
                     />
-                    <button @click="saveRename" class="icon-btn save-btn" title="Guardar">
+                    <button @click="saveRename" class="icon-btn save-btn" :title="t('common.save')">
                         <Check :size="16" />
                     </button>
-                    <button @click="cancelRename" class="icon-btn cancel-btn" title="Cancelar">
+                    <button @click="cancelRename" class="icon-btn cancel-btn" :title="t('common.cancel')">
                         <X :size="16" />
                     </button>
                 </template>
@@ -100,18 +102,18 @@ const toggleFavorite = () => {
                 @click="toggleFavorite"
                 class="header-action favorite-btn"
                 :class="{ 'is-favorite': currentChat?.is_favorite }"
-                title="Añadir a favoritos"
+                :title="t('chat.favorite')"
             >
                 <Star :size="18" :fill="currentChat?.is_favorite ? 'currentColor' : 'none'" />
-                <span class="btn-text">Favorito</span>
+                <span class="btn-text">{{ t('chat.favorite') }}</span>
             </button>
-            <button @click="$emit('share-chat')" class="header-action" title="Compartir">
+            <button @click="$emit('share-chat')" class="header-action" :title="t('chat.share')">
                 <Share2 :size="18" />
-                <span class="btn-text">Compartir</span>
+                <span class="btn-text">{{ t('chat.share') }}</span>
             </button>
-            <button @click="deleteCurrentChat" class="header-action delete-btn" title="Eliminar">
+            <button @click="deleteCurrentChat" class="header-action delete-btn" :title="t('common.delete')">
                 <Trash2 :size="18" />
-                <span class="btn-text">Eliminar</span>
+                <span class="btn-text">{{ t('common.delete') }}</span>
             </button>
         </div>
     </header>
@@ -124,10 +126,11 @@ const toggleFavorite = () => {
     justify-content: space-between;
     align-items: center;
     padding: 10px 12px;
-    background: #1a1a2e;
-    border-bottom: 1px solid #0f3460;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-primary);
     flex-shrink: 0;
     gap: 8px;
+    font-family: 'Roboto', sans-serif;
 }
 
 .header-left,
@@ -158,7 +161,7 @@ const toggleFavorite = () => {
 
 .chat-title {
     font-size: 0.95rem;
-    color: #fff;
+    color: var(--text-primary);
     font-weight: 500;
     margin: 0;
     white-space: nowrap;
@@ -167,9 +170,9 @@ const toggleFavorite = () => {
 }
 
 .title-input {
-    background: #0f3460;
-    border: 1px solid #ffd700;
-    color: white;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--color-accent);
+    color: var(--color-white);
     border-radius: 4px;
     padding: 4px 8px;
     font-size: 0.9rem;
@@ -181,7 +184,7 @@ const toggleFavorite = () => {
 .icon-btn {
     background: none;
     border: none;
-    color: #777;
+    color: var(--text-tertiary);
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -192,16 +195,16 @@ const toggleFavorite = () => {
 }
 
 .icon-btn:hover {
-    color: #fff;
+    color: var(--color-white);
     background: rgba(255,255,255,0.1);
 }
 
 .save-btn:hover {
-    color: #2ecc71;
+    color: var(--color-success);
 }
 
 .cancel-btn:hover {
-    color: #e74c3c;
+    color: var(--color-error);
 }
 
 /* Action Buttons */
@@ -211,8 +214,8 @@ const toggleFavorite = () => {
     justify-content: center;
     gap: 6px;
     background: none;
-    border: 1px solid #0f3460;
-    color: #ccc;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
     padding: 8px;
     border-radius: 6px;
     cursor: pointer;
@@ -220,8 +223,8 @@ const toggleFavorite = () => {
 }
 
 .header-action:hover {
-    background-color: #0f3460;
-    color: #ffd700;
+    background-color: var(--bg-tertiary);
+    color: var(--color-accent-text);
 }
 
 /* Hide text on mobile */
@@ -231,20 +234,20 @@ const toggleFavorite = () => {
 
 /* Favorite Button */
 .favorite-btn.is-favorite {
-    color: #ffd700;
-    border-color: #ffd700;
+    color: var(--color-accent-text);
+    border-color: var(--color-accent-text);
 }
 
 /* Delete Button */
 .delete-btn {
     border-color: rgba(192, 57, 43, 0.5);
-    color: #c0392b;
+    color: var(--color-error);
 }
 
 .delete-btn:hover {
-    background-color: #c0392b;
-    border-color: #c0392b;
-    color: white;
+    background-color: var(--color-error);
+    border-color: var(--color-error);
+    color: var(--color-white);
 }
 
 /* Desktop styles */

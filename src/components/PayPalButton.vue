@@ -237,14 +237,14 @@ onUnmounted(() => {
 .loading-state {
   text-align: center;
   padding: 40px 20px;
-  color: #ffd700;
+  color: var(--color-accent-text);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
   border: 4px solid rgba(255, 215, 0, 0.3);
-  border-left: 4px solid #ffd700;
+  border-left: 4px solid var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 15px;
@@ -259,20 +259,20 @@ onUnmounted(() => {
   text-align: center;
   padding: 20px;
   background: rgba(255, 107, 107, 0.1);
-  border: 1px solid #ff6b6b;
+  border: 1px solid var(--color-error);
   border-radius: 8px;
   margin-bottom: 20px;
 }
 
 .error-message {
-  color: #ff6b6b;
+  color: var(--color-error);
   margin-bottom: 15px;
   font-size: 1rem;
 }
 
 .retry-button {
-  background: #ff6b6b;
-  color: white;
+  background: var(--color-error);
+  color: var(--color-white);
   border: none;
   padding: 10px 20px;
   border-radius: 5px;
@@ -282,12 +282,12 @@ onUnmounted(() => {
 }
 
 .retry-button:hover {
-  background: #ff5252;
+  background: var(--color-error);
 }
 
 .paypal-container {
   background: rgba(22, 33, 62, 0.3);
-  border: 1px solid #0f3460;
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
   padding: 25px;
 }
@@ -300,13 +300,13 @@ onUnmounted(() => {
 }
 
 .plan-summary h3 {
-  color: #ffd700;
+  color: var(--color-accent-text);
   font-size: 1.4rem;
   margin-bottom: 8px;
 }
 
 .amount {
-  color: #f4f4f4;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: bold;
   margin: 0;
@@ -323,14 +323,14 @@ onUnmounted(() => {
 }
 
 .secure-text {
-  color: #4caf50;
+  color: var(--color-success);
   font-size: 0.9rem;
   margin-bottom: 5px;
   font-weight: 500;
 }
 
 .cancel-text {
-  color: #aaa;
+  color: var(--text-secondary);
   font-size: 0.8rem;
   margin: 0;
   font-style: italic;

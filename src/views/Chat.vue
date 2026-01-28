@@ -428,24 +428,24 @@ watch(readings, scrollToBottom, { deep: true });
 
 <style scoped>
 /* Mobile First Base Styles */
-.chat-layout { display: flex; height: 100vh; height: 100dvh; background: #0f3460; overflow: hidden; }
+.chat-layout { display: flex; height: 100vh; height: 100dvh; background: var(--bg-tertiary); overflow: hidden; }
 .sidebar-container {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
     width: 280px;
-    background: #16213e;
+    background: var(--bg-secondary);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 999;
 }
 .sidebar-container.is-open { transform: translateX(0); }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; width: 100%; }
-.chat-container { flex-grow: 1; overflow-y: auto; padding: 15px; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+.chat-container { flex-grow: 1; overflow-y: auto; padding: 15px; background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary)); }
 .readings-list { max-width: 900px; margin: 0 auto; }
 .welcome-message { text-align: center; padding: 20px; }
-.welcome-message h2 { font-size: 1.8rem; color: #ffd700; margin-bottom: 15px; }
+.welcome-message h2 { font-size: 1.8rem; color: var(--color-accent-text); margin-bottom: 15px; }
 .welcome-message p { font-size: 1rem; max-width: 500px; margin: 0 auto; line-height: 1.6; }
 .form-container { flex-shrink: 0; }
 
@@ -464,12 +464,12 @@ watch(readings, scrollToBottom, { deep: true });
     display: block;
     width: 22px;
     height: 2px;
-    background-color: #ccc;
+    background-color: var(--text-secondary);
     margin: 3px 0;
     transition: all 0.3s;
     border-radius: 2px;
 }
-.menu-button:hover span { background-color: #ffd700; }
+.menu-button:hover span { background-color: var(--color-accent-text); }
 
 /* Overlay */
 .overlay {

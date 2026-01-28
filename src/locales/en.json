@@ -1,0 +1,192 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "filter": "Filter",
+    "more": "More",
+    "less": "Less"
+  },
+  "nav": {
+    "newChat": "New Chat",
+    "profile": "View Profile",
+    "logout": "Log Out",
+    "upgradeToPremium": "Upgrade to Premium",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies"
+  },
+  "sidebar": {
+    "newChat": "New Chat",
+    "history": "History",
+    "chatsThisWeek": "{count} chat remaining this week | {count} chats remaining this week",
+    "weeklyLimitReached": "Weekly limit reached",
+    "loadingChats": "Loading chats...",
+    "noChats": "No recent chats.",
+    "hiddenChats": "+{count} hidden chats",
+    "unlockFullHistory": "Unlock full history",
+    "premiumActive": "Premium Active",
+    "changeToLightMode": "Switch to light mode",
+    "changeToDarkMode": "Switch to dark mode"
+  },
+  "chat": {
+    "untitled": "Untitled chat",
+    "placeholder": "Write your question here...",
+    "submit": "Draw Cards",
+    "thinking": "Thinking...",
+    "charCount": "{current} / {max}",
+    "favorite": "Favorite",
+    "share": "Share",
+    "rename": "Rename chat",
+    "deleteConfirm": "Are you sure you want to delete this chat? This action cannot be undone.",
+    "deleteError": "Could not delete the chat.",
+    "renameError": "Could not rename the chat.",
+    "favoriteError": "Could not update favorite status."
+  },
+  "cards": {
+    "past": "Past",
+    "present": "Present",
+    "future": "Future",
+    "inverted": "Reversed",
+    "hidden": "Hidden",
+    "futureHidden": "The future remains veiled until you claim your destiny...",
+    "futureAwaits": "Your future awaits to be revealed",
+    "unlockFuture": "Unlock future",
+    "claimIdentity": "Claim my identity"
+  },
+  "reading": {
+    "oracleThinking": "The oracle is contemplating your destiny...",
+    "listen": "Listen",
+    "pause": "Pause",
+    "loading": "Loading..."
+  },
+  "auth": {
+    "login": "Log In",
+    "signup": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithFacebook": "Continue with Facebook",
+    "or": "or",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "createAccount": "Create account",
+    "loginLink": "Log in",
+    "passwordPlaceholder": "Your password",
+    "passwordMin": "Minimum 6 characters",
+    "emailPlaceholder": "your@email.com",
+    "completeAllFields": "Please complete all fields",
+    "checkEmailConfirm": "Check your email to confirm your account"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Your account information and preferences.",
+    "loadingProfile": "Loading profile...",
+    "name": "Name",
+    "email": "Email",
+    "gender": "Gender",
+    "dateOfBirth": "Date of birth",
+    "timezone": "Timezone",
+    "language": "Language",
+    "memberSince": "Member since",
+    "plan": "Plan",
+    "renewal": "Renewal",
+    "notSpecified": "Not specified",
+    "notAvailable": "Not available",
+    "editProfile": "Edit Profile",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "backToChat": "Back to Chat",
+    "premiumUser": "Premium User",
+    "genders": {
+      "male": "Male",
+      "female": "Female",
+      "nonBinary": "Non-binary",
+      "preferNotToSay": "Prefer not to say",
+      "other": "Other"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    },
+    "timezones": {
+      "mexicoCity": "Mexico City (GMT-6)",
+      "newYork": "New York (GMT-5)",
+      "losAngeles": "Los Angeles (GMT-8)",
+      "chicago": "Chicago (GMT-6)",
+      "denver": "Denver (GMT-7)",
+      "madrid": "Madrid (GMT+1)",
+      "london": "London (GMT+0)",
+      "bogota": "Bogotá (GMT-5)",
+      "lima": "Lima (GMT-5)",
+      "santiago": "Santiago (GMT-3)",
+      "buenosAires": "Buenos Aires (GMT-3)"
+    },
+    "zodiacSigns": {
+      "aries": "Aries",
+      "taurus": "Taurus",
+      "gemini": "Gemini",
+      "cancer": "Cancer",
+      "leo": "Leo",
+      "virgo": "Virgo",
+      "libra": "Libra",
+      "scorpio": "Scorpio",
+      "sagittarius": "Sagittarius",
+      "capricorn": "Capricorn",
+      "aquarius": "Aquarius",
+      "pisces": "Pisces"
+    }
+  },
+  "landing": {
+    "welcome": "Welcome to Oracle AI",
+    "subtitle": "Your mystical guide powered by artificial intelligence",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "features": {
+      "title": "Features",
+      "ai": "Advanced AI",
+      "aiDesc": "Deep and personalized interpretations",
+      "cards": "Tarot Cards",
+      "cardsDesc": "Selection of 78 traditional cards",
+      "history": "History",
+      "historyDesc": "Save all your previous readings"
+    }
+  },
+  "checkout": {
+    "title": "Choose Your Plan",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "perMonth": "/ month",
+    "perYear": "/ year",
+    "save": "Save {percent}%",
+    "selectPlan": "Select Plan",
+    "currentPlan": "Current Plan",
+    "processing": "Processing...",
+    "features": {
+      "unlimited": "Unlimited chats",
+      "fullHistory": "Full history",
+      "priority": "Priority support",
+      "advanced": "Advanced interpretations"
+    }
+  },
+  "errors": {
+    "generic": "An error has occurred",
+    "networkError": "Connection error",
+    "unauthorized": "Unauthorized",
+    "notFound": "Not found",
+    "serverError": "Server error"
+  },
+  "success": {
+    "saved": "Saved successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully"
+  }
+}

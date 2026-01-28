@@ -3,10 +3,12 @@ import { onMounted, computed, watch, ref, nextTick } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chats';
 import { useRouter } from 'vue-router';
-import { PlusCircle, LogOut, Crown } from 'lucide-vue-next';
+import { PlusCircle, LogOut, Crown, Moon, Sun } from 'lucide-vue-next';
+import { useI18n } from 'vue-i18n';
 
 const emit = defineEmits(['close-sidebar']);
 const router = useRouter();
+const { t } = useI18n();
 
 const FREE_CHAT_LIMIT = 5;
 const FREE_CHATS_PER_WEEK = 1;
@@ -62,7 +64,7 @@ const remainingChatsThisWeek = computed(() => {
 
 const createNewChat = () => {
     if (!canCreateNewChat.value) {
-        alert('Has alcanzado el límite de 1 chat por semana en el plan gratuito. Actualiza a Premium para chats ilimitados.');
+        alert(t('sidebar.weeklyLimitReached') + '. ' + t('nav.upgradeToPremium') + '.');
         return;
     }
     router.push({ name: 'new-chat' });
@@ -73,6 +75,32 @@ const logout = () => {
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = '/';
+};
+
+// Theme toggle functionality
+const isDarkMode = ref(true);
+
+onMounted(() => {
+    // Initialize theme from localStorage or default to dark
+    const savedTheme = localStorage.getItem('theme');
+    isDarkMode.value = savedTheme !== 'light';
+
+    // Apply the theme class
+    if (!isDarkMode.value) {
+        document.documentElement.classList.add('light-mode');
+    }
+});
+
+const toggleTheme = () => {
+    isDarkMode.value = !isDarkMode.value;
+
+    if (isDarkMode.value) {
+        document.documentElement.classList.remove('light-mode');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.classList.add('light-mode');
+        localStorage.setItem('theme', 'light');
+    }
 };
 
 // Computed properties for user display
@@ -114,8 +142,12 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
                 <div class="avatar">{{ userAvatar }}</div>
                 <div class="profile-info">
                     <span class="username">{{ userName }}</span>
-                    <router-link to="/profile" class="profile-link">Ver Perfil</router-link>
+                    <router-link to="/profile" class="profile-link">{{ t('nav.profile') }}</router-link>
                 </div>
+                <button @click="toggleTheme" class="theme-toggle-btn" :title="isDarkMode ? t('sidebar.changeToLightMode') : t('sidebar.changeToDarkMode')">
+                    <Moon v-if="isDarkMode" :size="20" />
+                    <Sun v-else :size="20" />
+                </button>
             </div>
 
             <!-- New Chat Button -->
@@ -126,19 +158,19 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
                 :disabled="!canCreateNewChat"
             >
                 <PlusCircle :size="20" />
-                <span>Nuevo Chat</span>
+                <span>{{ t('nav.newChat') }}</span>
             </button>
 
             <!-- Límite semanal para usuarios gratuitos -->
             <div v-if="!auth.isPremiumUser" class="weekly-limit">
-                <span v-if="canCreateNewChat">{{ remainingChatsThisWeek }} chat restante esta semana</span>
-                <span v-else class="limit-reached">Límite semanal alcanzado</span>
+                <span v-if="canCreateNewChat">{{ t('sidebar.chatsThisWeek', { count: remainingChatsThisWeek }, remainingChatsThisWeek) }}</span>
+                <span v-else class="limit-reached">{{ t('sidebar.weeklyLimitReached') }}</span>
             </div>
 
             <!-- Chat History -->
             <nav class="chat-history">
-                <h3 class="history-title">Historial</h3>
-                <div v-if="chatStore.isLoading" class="loading-text">Cargando chats...</div>
+                <h3 class="history-title">{{ t('sidebar.history') }}</h3>
+                <div v-if="chatStore.isLoading" class="loading-text">{{ t('sidebar.loadingChats') }}</div>
                 <ul v-else-if="visibleChats.length > 0">
                     <li v-for="chat in visibleChats" :key="chat.id">
                         <router-link
@@ -147,17 +179,17 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
                             @click="emit('close-sidebar')"
                         >
                             <span v-if="chat.is_favorite" class="favorite-icon">⭐</span>
-                            <span class="chat-title-text">{{ chat.title || 'Chat sin título' }}</span>
+                            <span class="chat-title-text">{{ chat.title || t('chat.untitled') }}</span>
                         </router-link>
                     </li>
                 </ul>
-                <div v-else class="no-chats">No hay chats recientes.</div>
+                <div v-else class="no-chats">{{ t('sidebar.noChats') }}</div>
 
                 <!-- Premium upsell for hidden chats -->
                 <div v-if="hiddenChatsCount > 0" class="premium-upsell">
-                    <p>+{{ hiddenChatsCount }} chats ocultos</p>
+                    <p>{{ t('sidebar.hiddenChats', { count: hiddenChatsCount }) }}</p>
                     <router-link to="/checkout" class="unlock-link">
-                        Desbloquear historial completo
+                        {{ t('sidebar.unlockFullHistory') }}
                     </router-link>
                 </div>
             </nav>
@@ -166,23 +198,23 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
             <div class="sidebar-actions">
                 <router-link v-if="!auth.isPremiumUser" to="/checkout" class="action-button upgrade-btn">
                     <Crown :size="18" />
-                    <span>Upgrade a Premium</span>
+                    <span>{{ t('nav.upgradeToPremium') }}</span>
                 </router-link>
                 <div v-else class="premium-badge-sidebar">
                     <Crown :size="18" />
-                    <span>Premium Activo</span>
+                    <span>{{ t('sidebar.premiumActive') }}</span>
                 </div>
                 <button @click="logout" class="action-button logout-btn">
                     <LogOut :size="18" />
-                    <span>Cerrar Sesión</span>
+                    <span>{{ t('nav.logout') }}</span>
                 </button>
             </div>
         </div>
 
         <footer class="sidebar-footer">
-            <router-link to="/terms">Términos</router-link>
+            <router-link to="/terms">{{ t('nav.terms') }}</router-link>
             <span>·</span>
-            <router-link to="/privacy">Privacidad</router-link>
+            <router-link to="/privacy">{{ t('nav.privacy') }}</router-link>
         </footer>
     </aside>
 </template>
@@ -192,9 +224,10 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #16213e;
-    color: #ccc;
-    border-right: 1px solid #0f3460;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-primary);
+    font-family: 'Roboto', sans-serif;
 }
 
 .sidebar-content {
@@ -211,15 +244,15 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     align-items: center;
     gap: 12px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #0f3460;
+    border-bottom: 1px solid var(--border-primary);
 }
 
 .avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #0f3460;
-    color: #ffd700;
+    background: var(--bg-tertiary);
+    color: var(--color-accent-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -242,8 +275,31 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 
 .profile-link {
     font-size: 0.85rem;
-    color: #ffd700;
+    color: var(--color-accent-text);
     text-decoration: none;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    background: none;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--color-accent-text);
+    border-color: var(--color-accent-text);
 }
 
 /* New Chat Button */
@@ -254,8 +310,8 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     gap: 8px;
     margin-top: 16px;
     padding: 12px 16px;
-    background: linear-gradient(45deg, #1a5a3a, #2d7a4e);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -265,12 +321,12 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 }
 
 .new-chat-btn:hover:not(.disabled) {
-    background: linear-gradient(45deg, #2d7a4e, #3d9a6e);
+    background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
     transform: translateY(-1px);
 }
 
 .new-chat-btn.disabled {
-    background: #444;
+    background: var(--bg-elevated);
     cursor: not-allowed;
     opacity: 0.6;
 }
@@ -279,7 +335,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 .weekly-limit {
     text-align: center;
     font-size: 0.8rem;
-    color: #888;
+    color: var(--text-tertiary);
     margin-top: 8px;
     padding: 6px;
     background: rgba(0,0,0,0.2);
@@ -287,7 +343,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 }
 
 .weekly-limit .limit-reached {
-    color: #e74c3c;
+    color: var(--color-error);
 }
 
 /* Chat History */
@@ -302,7 +358,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 .history-title {
     font-size: 0.85rem;
     text-transform: uppercase;
-    color: #888;
+    color: var(--text-tertiary);
     margin-bottom: 10px;
     letter-spacing: 0.5px;
 }
@@ -316,7 +372,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 }
 
 .history-link {
-    color: #ccc;
+    color: var(--text-secondary);
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -328,7 +384,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 
 .history-link:hover,
 .router-link-exact-active {
-    background-color: #0f3460;
+    background-color: var(--bg-tertiary);
 }
 
 .favorite-icon {
@@ -343,7 +399,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 
 .loading-text,
 .no-chats {
-    color: #666;
+    color: var(--text-tertiary);
     font-size: 0.9rem;
     padding: 10px 0;
 }
@@ -353,19 +409,19 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     margin-top: 15px;
     padding: 12px;
     background: rgba(255, 215, 0, 0.08);
-    border: 1px dashed rgba(255, 215, 0, 0.3);
+    border: 1px dashed var(--accent-dim);
     border-radius: 8px;
     text-align: center;
 }
 
 .premium-upsell p {
     margin: 0 0 8px 0;
-    color: #aaa;
+    color: var(--text-secondary);
     font-size: 0.85rem;
 }
 
 .unlock-link {
-    color: #ffd700;
+    color: var(--color-accent-text);
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: bold;
@@ -382,7 +438,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     flex-direction: column;
     gap: 10px;
     padding-top: 20px;
-    border-top: 1px solid #0f3460;
+    border-top: 1px solid var(--border-primary);
 }
 
 .action-button {
@@ -402,21 +458,21 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 }
 
 .upgrade-btn {
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
 }
 
 .upgrade-btn:hover {
-    background: linear-gradient(45deg, #a0522d, #b8653d);
+    background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
 }
 
 .logout-btn {
-    background-color: #2a2a3e;
-    color: #ccc;
+    background-color: var(--bg-card);
+    color: var(--text-secondary);
 }
 
 .logout-btn:hover {
-    background-color: #3a3a4e;
+    background-color: var(--bg-elevated);
 }
 
 .premium-badge-sidebar {
@@ -427,8 +483,8 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     padding: 12px;
     border-radius: 6px;
     background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 237, 74, 0.1));
-    border: 1px solid #ffd700;
-    color: #ffd700;
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent-text);
     font-weight: bold;
     font-size: 0.9rem;
 }
@@ -438,21 +494,21 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     padding: 16px 20px;
     text-align: center;
     font-size: 0.85rem;
-    border-top: 1px solid #0f3460;
+    border-top: 1px solid var(--border-primary);
     flex-shrink: 0;
 }
 
 .sidebar-footer a {
-    color: #777;
+    color: var(--text-tertiary);
     text-decoration: none;
 }
 
 .sidebar-footer a:hover {
-    color: #aaa;
+    color: var(--text-secondary);
 }
 
 .sidebar-footer span {
     margin: 0 8px;
-    color: #555;
+    color: var(--text-tertiary);
 }
 </style>

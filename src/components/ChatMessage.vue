@@ -123,8 +123,8 @@ const playAudio = async () => {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.user-message .message-bubble { background-color: #0f3460; color: #e0e0e0; border-bottom-right-radius: 5px; }
-.ai-message .message-bubble { background-color: #16213e; color: #f0f0f0; border-bottom-left-radius: 5px; }
+.user-message .message-bubble { background-color: var(--bg-tertiary); color: var(--text-primary); border-bottom-right-radius: 5px; }
+.ai-message .message-bubble { background-color: var(--bg-secondary); color: var(--text-primary); border-bottom-left-radius: 5px; }
 
 .message-header {
     display: flex;
@@ -133,9 +133,9 @@ const playAudio = async () => {
 }
 
 .tts-button {
-    background: #2c3e50;
-    border: 1px solid #7f8c8d;
-    color: #ecf0f1;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
     border-radius: 50%;
     width: 30px;
     height: 30px;
@@ -148,5 +148,5 @@ const playAudio = async () => {
 .tts-button:disabled { cursor: not-allowed; opacity: 0.7; }
 
 .message-content { margin: 0; word-wrap: break-word; }
-.message-timestamp { font-size: 0.75rem; color: #999; align-self: flex-end; margin-top: 8px; }
+.message-timestamp { font-size: 0.75rem; color: var(--text-tertiary); align-self: flex-end; margin-top: 8px; }
 </style>

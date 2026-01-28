@@ -2,8 +2,10 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { marked } from 'marked';
+import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
+const { t } = useI18n();
 
 const props = defineProps({
     cards: {
@@ -64,7 +66,7 @@ watch(() => props.interpretation, (newInterpretation) => {
 }, { immediate: true });
 
 const cardBackImg = '/img/sm_RWSa-X-BA.webp';
-const cardTitles = ['Pasado', 'Presente', 'Futuro'];
+const cardTitles = computed(() => [t('cards.past'), t('cards.present'), t('cards.future')]);
 
 const formattedInterpretation = computed(() => {
     if (!props.interpretation) return '';
@@ -136,7 +138,6 @@ const playAudio = async () => {
         <div v-if="cards && cards.length > 0" class="cards-container">
             <div v-for="(card, index) in cards" :key="card.name" class="card"
                 :class="{ 'is-visible': card.revealed, 'future-hidden': futureHidden && isFutureCard(index) }">
-                <h4 v-if="card.isFlipped" class="card-position-title">{{ cardTitles[index] }}</h4>
                 <div class="card-visual-wrapper">
                     <div class="card-inner" :class="{ 'is-flipped': card.isFlipped && !(futureHidden && isFutureCard(index)) }">
                         <div class="card-face card-face--back">
@@ -151,36 +152,38 @@ const playAudio = async () => {
                     <div v-if="futureHidden && isFutureCard(index) && card.isFlipped" class="future-overlay">
                         <div class="future-overlay-content">
                             <div class="mystical-symbol">🔮</div>
-                            <p class="overlay-text">{{ ctaMessage || 'Tu futuro aguarda ser revelado' }}</p>
+                            <p class="overlay-text">{{ ctaMessage || t('cards.futureAwaits') }}</p>
                             <button @click="handleCtaClick" class="unlock-btn">
-                                {{ isAnonymous ? 'Reclamar mi identidad' : 'Desbloquear futuro' }}
+                                {{ isAnonymous ? t('cards.claimIdentity') : t('cards.unlockFuture') }}
                             </button>
                         </div>
                     </div>
                 </div>
                 <div v-if="card.isFlipped && !(futureHidden && isFutureCard(index))" class="card-info">
+                    <h4 class="card-position-title">{{ cardTitles[index] }}</h4>
                     <h3 class="card-name">{{ card.name }} <span v-if="!card.upright"
-                            class="card-orientation card-orientation_invertida">(Invertida)</span></h3>
+                            class="card-orientation card-orientation_invertida">({{ t('cards.inverted') }})</span></h3>
                     <p class="card-description">{{ card.description }}</p>
                 </div>
                 <!-- Hidden future card info placeholder -->
                 <div v-if="card.isFlipped && futureHidden && isFutureCard(index)" class="card-info card-info--hidden">
-                    <h3 class="card-name">??? <span class="card-orientation card-orientation_oculta">(Oculto)</span></h3>
-                    <p class="card-description">El futuro permanece velado hasta que reclames tu destino...</p>
+                    <h4 class="card-position-title">{{ cardTitles[index] }}</h4>
+                    <h3 class="card-name">??? <span class="card-orientation card-orientation_oculta">({{ t('cards.hidden') }})</span></h3>
+                    <p class="card-description">{{ t('cards.futureHidden') }}</p>
                 </div>
             </div>
         </div>
 
         <div v-if="isLoading && !interpretation" class="interpretation-loading">
-            El oráculo está meditando sobre tu destino...
+            {{ t('reading.oracleThinking') }}
         </div>
 
         <div v-if="interpretation" class="interpretation-wrapper">
             <div class="interpretation-header">
                 <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
-                    <span v-if="audioState === 'idle' || audioState === 'error'">🔊 Escuchar</span>
-                    <span v-if="audioState === 'loading'">⏳ Cargando...</span>
-                    <span v-if="audioState === 'playing'">⏸️ Pausar</span>
+                    <span v-if="audioState === 'idle' || audioState === 'error'">🔊 {{ t('reading.listen') }}</span>
+                    <span v-if="audioState === 'loading'">⏳ {{ t('reading.loading') }}</span>
+                    <span v-if="audioState === 'playing'">⏸️ {{ t('reading.pause') }}</span>
                 </button>
             </div>
             <div class="interpretation-container" v-html="formattedInterpretation"></div>
@@ -189,10 +192,11 @@ const playAudio = async () => {
 </template>
 
 <style scoped>
+/* Mobile-first styles */
 .cards-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     perspective: 1000px;
     margin-bottom: 20px;
 }
@@ -201,6 +205,10 @@ const playAudio = async () => {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.5s ease, transform 0.5s ease;
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 15px;
+    align-items: stretch;
 }
 
 .card.is-visible {
@@ -209,20 +217,20 @@ const playAudio = async () => {
 }
 
 .card-position-title {
-    color: #ffd700;
+    color: var(--color-accent-text);
     text-align: center;
-    font-size: 1.4rem;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 3px var(--shadow-sm);
     opacity: 0;
     animation: fadeInTitle 1s ease-out 0.2s forwards;
 }
 
-.card-visual-wrapper { position: relative; width: 100%; padding-top: 170%; border-radius: 15px; margin-bottom: 16px; }
+.card-visual-wrapper { position: relative; width: 100%; padding-top: 170%; border-radius: 12px; }
 .card-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); transform-style: preserve-3d; }
 .card-inner.is-flipped { transform: rotateY(180deg); }
-.card-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: #1f1f32; border-radius: 15px; border: 2px solid white; overflow: hidden; background-color: white; }
+.card-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--bg-elevated); border-radius: 12px; overflow: hidden; background-color: var(--color-white); }
 .card-face--front { transform: rotateY(180deg); }
 .card-image { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
 .card-image.is-inverted { transform: rotate(180deg); }
@@ -237,31 +245,35 @@ const playAudio = async () => {
     100% { opacity: 1; transform: translateY(0); }
 }
 
-.card-info { 
-    background: linear-gradient(145deg, #2a2a3e, #1f1f32);
+.card-info {
+    background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
     border: none;
-    border-radius: 25px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 15px;
     opacity: 0;
     animation: fadeInAfterFlip 1.3s ease-out forwards;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.card-name { font-size: 1.2rem; font-weight: bold; color: #ffd700; margin-bottom: 10px; text-align: center; line-height: 1.4; }
-.card-orientation.card-orientation_invertida { color: #ff6b6b; font-size: 1rem; font-weight: normal; font-style: italic; }
-.card-description { font-size: 0.9rem; line-height: 1.6; color: #ddd; text-align: justify; }
+.card-name { font-size: 1rem; font-weight: 600; color: var(--color-accent-text); margin-bottom: 8px; text-align: center; line-height: 1.3; }
+.card-orientation { display: block; margin-top: 4px; }
+.card-orientation.card-orientation_invertida { color: var(--color-error); font-size: 0.85rem; font-weight: normal; font-style: italic; }
+.card-description { font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); text-align: center; }
 
 .interpretation-loading, .interpretation-error {
     text-align: center;
     font-size: 1.1rem;
-    color: #ffd700;
+    color: var(--color-accent-text);
     margin: 30px auto;
     max-width: 90%;
     padding: 20px;
-    background: rgba(22, 33, 62, 0.5);
+    background: var(--bg-overlay);
     border-radius: 8px;
 }
 
-.interpretation-error { color: #ff6b6b; }
+.interpretation-error { color: var(--color-error); }
 
 .interpretation-wrapper {
     margin: 20px auto 0;
@@ -274,8 +286,8 @@ const playAudio = async () => {
 }
 
 .tts-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--btn-secondary) 0%, var(--btn-secondary-hover) 100%);
+    color: var(--color-white);
     border: none;
     border-radius: 20px;
     padding: 8px 16px;
@@ -289,7 +301,7 @@ const playAudio = async () => {
 
 .tts-button:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 .tts-button:disabled {
@@ -299,13 +311,13 @@ const playAudio = async () => {
 
 .interpretation-container {
     max-width: 100%;
-    background: linear-gradient(145deg, #2a2a3e, #1f1f32);
+    background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
     border-radius: 15px;
     padding: 25px;
-    font-family: 'Georgia', serif;
+    font-family: var(--font-content);
     font-size: 1.05rem;
     line-height: 1.8;
-    color: #f4f4f4;
+    color: var(--text-primary);
 }
 
 /* Future Hidden Styles */
@@ -319,7 +331,7 @@ const playAudio = async () => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(15, 52, 96, 0.95), rgba(26, 26, 46, 0.98));
+    background: linear-gradient(135deg, var(--overlay-future-start), var(--overlay-future-end));
     border-radius: 15px;
     display: flex;
     align-items: center;
@@ -329,8 +341,8 @@ const playAudio = async () => {
 }
 
 @keyframes mysticalPulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+    0%, 100% { box-shadow: 0 0 20px var(--accent-dim); }
+    50% { box-shadow: 0 0 40px var(--accent-glow); }
 }
 
 .future-overlay-content {
@@ -350,42 +362,109 @@ const playAudio = async () => {
 }
 
 .overlay-text {
-    color: #ffd700;
+    color: var(--color-accent-text);
     font-size: 1rem;
     font-style: italic;
     margin-bottom: 20px;
     line-height: 1.5;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+    text-shadow: 1px 1px 3px var(--shadow-lg);
 }
 
 .unlock-btn {
-    background: linear-gradient(45deg, #8b4513, #a0522d);
-    color: white;
-    border: 2px solid #ffd700;
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
+    border: 2px solid var(--color-accent);
     padding: 12px 24px;
     font-size: 1rem;
     border-radius: 25px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 2px var(--shadow-md);
 }
 
 .unlock-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
-    background: linear-gradient(45deg, #a0522d, #cd853f);
+    box-shadow: 0 5px 20px var(--accent-glow);
+    background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
 }
 
 .card-info--hidden {
-    background: linear-gradient(145deg, rgba(42, 42, 62, 0.7), rgba(31, 31, 50, 0.7));
-    border: 1px dashed rgba(255, 215, 0, 0.3);
+    background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
+    border: 1px dashed var(--accent-dim);
 }
 
 .card-orientation.card-orientation_oculta {
-    color: #aaa;
-    font-size: 1rem;
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
     font-weight: normal;
     font-style: italic;
+}
+
+/* Tablet and Desktop styles */
+@media (min-width: 768px) {
+    .cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 30px;
+        align-items: start;
+    }
+
+    .card {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 0;
+        align-items: stretch;
+        height: 100%;
+    }
+
+    .card-visual-wrapper {
+        border-radius: 15px;
+        margin-bottom: 16px;
+    }
+
+    .card-inner {
+        border-radius: 15px;
+    }
+
+    .card-face {
+        border-radius: 15px;
+    }
+
+    .card-position-title {
+        text-align: center;
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+
+    .card-info {
+        border-radius: 15px;
+        padding: 20px;
+    }
+
+    .card-name {
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .card-orientation {
+        margin-top: 6px;
+    }
+
+    .card-orientation.card-orientation_invertida {
+        font-size: 1rem;
+    }
+
+    .card-orientation.card-orientation_oculta {
+        font-size: 1rem;
+    }
+
+    .card-description {
+        font-size: 0.9rem;
+        line-height: 1.6;
+        text-align: center;
+    }
 }
 </style>
