@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chats';
 import { supabase } from '../lib/supabase';
 import { getPersonalizedGreeting, generatePersonalContext } from '../utils/personalContext.js';
+import { useAnalytics } from '../composables/useAnalytics.js';
 
 import ChatMessage from '../components/ChatMessage.vue';
 import Reading from '../components/Reading.vue';
@@ -29,6 +30,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const chatStore = useChatStore();
+const { trackTarotReadingStart, trackTarotReadingComplete, trackTarotCardsRevealed, trackFirstReading, trackWeeklyLimitReached } = useAnalytics();
 
 // 2. Function Declarations
 const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
@@ -137,12 +139,18 @@ const handleQuestionSubmitted = async (question) => {
         await auth.loadReadingPermissions();
         if (!auth.canReadToday) {
             console.log('⚠️ Daily reading limit reached');
+            // Track weekly limit reached
+            trackWeeklyLimitReached(auth.readingsThisWeek || 0);
             showDailyLimitModal.value = true;
             return;
         }
     }
 
     isLoading.value = true;
+
+    // Track reading start
+    trackTarotReadingStart(question.length);
+
     const userMessage = { id: `local-${Date.now()}`, type: 'message', content: question, role: 'user', timestamp: new Date().toISOString() };
     readings.value.push(userMessage);
     scrollToBottom();
@@ -218,6 +226,10 @@ const handleQuestionSubmitted = async (question) => {
                         console.log('🃏 Cards received:', data.cards);
                         console.log('🔮 Future hidden:', data.futureHidden, 'CTA:', data.ctaMessage);
                         receivedCards = data.cards;
+
+                        // Track cards revealed
+                        const cardNames = data.cards.map(c => c.name);
+                        trackTarotCardsRevealed(cardNames);
 
                         // Store future visibility state
                         currentFutureHidden.value = data.futureHidden || false;
@@ -339,6 +351,14 @@ const handleQuestionSubmitted = async (question) => {
             // Record the reading for stats tracking
             const revealedFuture = !currentFutureHidden.value;
             await auth.recordReading(revealedFuture);
+
+            // Track reading complete
+            trackTarotReadingComplete(receivedCards.length);
+
+            // Track first reading if this is the user's first reading
+            if (readings.value.filter(r => r.type === 'tarotReading').length === 1) {
+                trackFirstReading();
+            }
         }
 
     } catch (error) {

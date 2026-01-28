@@ -5,9 +5,11 @@ import { useAuthStore } from '../stores/auth';
 import { useRoute, useRouter } from 'vue-router';
 import { Star, Share2, Trash2, Pencil, Check, X } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
+import { useAnalytics } from '../composables/useAnalytics.js';
 
-defineEmits(['share-chat']);
+const emit = defineEmits(['share-chat']);
 const { t } = useI18n();
+const { trackTarotReadingShare, trackTarotReadingFavorite } = useAnalytics();
 
 const chatStore = useChatStore();
 const auth = useAuthStore();
@@ -61,11 +63,24 @@ const deleteCurrentChat = async () => {
     }
 };
 
+const handleShare = () => {
+    if (currentChat.value) {
+        trackTarotReadingShare(currentChat.value.id);
+    }
+    emit('share-chat');
+};
+
 const toggleFavorite = () => {
     if (!currentChat.value || !auth.user) return;
-    chatStore.toggleFavorite(currentChat.value.id, auth.user.id).catch(error => {
-        alert(t('chat.favoriteError'));
-    });
+    const willBeFavorite = !currentChat.value.is_favorite;
+    chatStore.toggleFavorite(currentChat.value.id, auth.user.id)
+        .then(() => {
+            // Track favorite action
+            trackTarotReadingFavorite(willBeFavorite);
+        })
+        .catch(error => {
+            alert(t('chat.favoriteError'));
+        });
 };
 </script>
 
@@ -107,7 +122,7 @@ const toggleFavorite = () => {
                 <Star :size="18" :fill="currentChat?.is_favorite ? 'currentColor' : 'none'" />
                 <span class="btn-text">{{ t('chat.favorite') }}</span>
             </button>
-            <button @click="$emit('share-chat')" class="header-action" :title="t('chat.share')">
+            <button @click="handleShare" class="header-action" :title="t('chat.share')">
                 <Share2 :size="18" />
                 <span class="btn-text">{{ t('chat.share') }}</span>
             </button>

@@ -2,8 +2,10 @@
 import { ref } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 import { useI18n } from 'vue-i18n'
+import { useAnalytics } from '../composables/useAnalytics.js'
 
 const { t } = useI18n()
+const { trackSignUp, trackLogin } = useAnalytics()
 
 const props = defineProps({
   isOpen: {
@@ -32,6 +34,9 @@ const handleGoogleLogin = async () => {
   const { error: authError } = await authStore.loginWithGoogle()
   if (authError) {
     error.value = authError.message
+  } else {
+    // Track successful Google login (works as both signup and login)
+    trackLogin('google')
   }
 }
 
@@ -40,6 +45,9 @@ const handleFacebookLogin = async () => {
   const { error: authError } = await authStore.loginWithFacebook()
   if (authError) {
     error.value = authError.message
+  } else {
+    // Track successful Facebook login (works as both signup and login)
+    trackLogin('facebook')
   }
 }
 
@@ -60,10 +68,15 @@ const handleEmailAuth = async () => {
 
   if (result.error) {
     error.value = result.error.message
-  } else if (!isLoginMode.value) {
-    error.value = t('auth.checkEmailConfirm')
   } else {
-    emit('close')
+    // Track successful authentication
+    if (isLoginMode.value) {
+      trackLogin('email')
+      emit('close')
+    } else {
+      trackSignUp('email')
+      error.value = t('auth.checkEmailConfirm')
+    }
   }
 }
 

@@ -127,10 +127,24 @@ const getUserLocation = async () => {
         }
         // Guardar en localStorage
         localStorage.setItem('userLocation', JSON.stringify(location))
+
+        // Track geolocation granted
+        import('../composables/useAnalytics.js').then(({ useAnalytics }) => {
+          const { trackGeolocationGranted } = useAnalytics()
+          trackGeolocationGranted()
+        })
+
         resolve(location)
       },
       (error) => {
         console.warn('No se pudo obtener la ubicación:', error.message)
+
+        // Track geolocation denied
+        import('../composables/useAnalytics.js').then(({ useAnalytics }) => {
+          const { trackGeolocationDenied } = useAnalytics()
+          trackGeolocationDenied()
+        })
+
         resolve(null)
       },
       {

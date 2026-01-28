@@ -124,9 +124,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import PayPalButton from '../components/PayPalButton.vue'
+import { useAnalytics } from '../composables/useAnalytics.js'
 
 const router = useRouter()
 const auth = useAuthStore()
+const { trackViewCheckout, trackBeginCheckout, trackPurchase } = useAnalytics()
 
 // State
 const plans = ref([])
@@ -174,6 +176,8 @@ const selectPlan = (plan) => {
     if (plan.price > 0) {
         selectedPlan.value = plan
         paymentError.value = null
+        // Track begin checkout when plan is selected
+        trackBeginCheckout(plan.plan_type || 'unknown', plan.price)
     }
 }
 
@@ -186,6 +190,13 @@ const goBack = () => {
 // Payment handlers
 const handlePaymentSuccess = async (data) => {
     console.log('Payment successful:', data)
+
+    // Track successful purchase
+    trackPurchase(
+        selectedPlan.value.plan_type || 'unknown',
+        selectedPlan.value.price,
+        data.transactionId
+    )
 
     // Store success info for the success page
     const successData = {
@@ -223,6 +234,8 @@ const handlePaymentLoading = (loading) => {
 // Load plans on component mount
 onMounted(() => {
     console.log('🛒 Checkout: Component mounted')
+    // Track view checkout
+    trackViewCheckout()
     loadPlans()
 })
 </script>

@@ -3,9 +3,11 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { marked } from 'marked';
 import { useI18n } from 'vue-i18n';
+import { useAnalytics } from '../composables/useAnalytics.js';
 
 const router = useRouter();
 const { t } = useI18n();
+const { trackTarotTTSPlay } = useAnalytics();
 
 const props = defineProps({
     cards: {
@@ -86,6 +88,9 @@ const playAudio = async () => {
         audioState.value = 'idle';
         return;
     }
+
+    // Track TTS play
+    trackTarotTTSPlay();
 
     audioState.value = 'loading';
     try {

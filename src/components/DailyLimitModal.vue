@@ -1,9 +1,17 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useAnalytics } from '../composables/useAnalytics.js';
 
 const emit = defineEmits(['close', 'view-plans']);
+const { trackWeeklyLimitModalView, trackUpgradeFromLimit } = useAnalytics();
+
+// Track modal view on mount
+onMounted(() => {
+    trackWeeklyLimitModalView();
+});
 
 const handleViewPlans = () => {
+    trackUpgradeFromLimit();
     emit('view-plans');
 };
 

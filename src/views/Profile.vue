@@ -4,10 +4,12 @@ import { useAuthStore } from '../stores/auth.js'
 import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase.js'
 import { useI18n } from 'vue-i18n'
+import { useAnalytics } from '../composables/useAnalytics.js'
 
 const auth = useAuthStore()
 const router = useRouter()
 const { locale, t } = useI18n()
+const { trackProfileComplete, trackLanguageChange } = useAnalytics()
 const userProfile = ref(null)
 const loading = ref(true)
 const editing = ref(false)
@@ -157,12 +159,30 @@ const cancelEditing = () => {
 const saveProfile = async () => {
     saving.value = true
 
+    // Track language change if language was changed
+    const oldLanguage = userProfile.value?.language
+    const newLanguage = editForm.value.language
+    if (oldLanguage && newLanguage && oldLanguage !== newLanguage) {
+        trackLanguageChange(oldLanguage, newLanguage)
+    }
+
     const { error } = await auth.updateProfile(editForm.value)
 
     if (error) {
         console.error('Error updating profile:', error)
         // You could show an error message here
     } else {
+        // Track profile completion with fields that are filled
+        const filledFields = []
+        if (editForm.value.name) filledFields.push('name')
+        if (editForm.value.gender) filledFields.push('gender')
+        if (editForm.value.dateOfBirth) filledFields.push('dateOfBirth')
+        if (editForm.value.timezone) filledFields.push('timezone')
+        if (editForm.value.language) filledFields.push('language')
+        if (filledFields.length > 0) {
+            trackProfileComplete(filledFields)
+        }
+
         // Update locale immediately
         locale.value = editForm.value.language
         localStorage.setItem('language', editForm.value.language)
