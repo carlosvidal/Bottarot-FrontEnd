@@ -80,6 +80,7 @@ const router = createRouter({
       path: '/chat/:chatId',
       name: 'chat',
       component: Chat,
+      meta: { hideLayout: true },
       beforeEnter: async (to, from, next) => {
         const auth = useAuthStore();
         if (!auth.isInitialized) await waitForAuthInitialization();
@@ -147,17 +148,20 @@ const router = createRouter({
     {
       path: '/debug',
       name: 'debug',
-      component: Debug
+      component: Debug,
+      meta: { hideLayout: true }
     },
     {
       path: '/admin',
       name: 'admin',
-      component: Admin
+      component: Admin,
+      meta: { hideLayout: true }
     },
     {
       path: '/shared/:shareId',
       name: 'shared-chat',
       component: () => import('../views/SharedChat.vue'),
+      meta: { hideLayout: true }
     },
     {
       path: '/logout',

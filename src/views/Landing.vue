@@ -3,23 +3,16 @@ import { ref, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
-
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const { t, locale } = useI18n();
 
-const availableLangs = [
-  { code: 'es', label: 'ES' },
-  { code: 'en', label: 'EN' },
-  { code: 'it', label: 'IT' },
-  { code: 'pt', label: 'PT' },
-  { code: 'fr', label: 'FR' }
-];
+const validLangs = ['es', 'en', 'it', 'pt', 'fr'];
 
 // Set locale from route param
 const setLangFromRoute = (lang) => {
-  if (lang && availableLangs.some(l => l.code === lang)) {
+  if (lang && validLangs.includes(lang)) {
     locale.value = lang;
     localStorage.setItem('language', lang);
   }
@@ -125,8 +118,6 @@ const handleSignup = async (event) => {
     <div class="landing-container">
 
         <div class="main-content">
-            <h1 class="title">{{ t('landing.title') }}</h1>
-
             <!-- Default Logged-out View -->
             <div v-if="!showSignupForm && !auth.needsRegistration">
                 <p class="subtitle">{{ t('landing.subtitle') }}</p>
@@ -240,30 +231,12 @@ const handleSignup = async (event) => {
             </div>
         </div>
 
-        <footer class="footer">
-            <div class="footer-links">
-                <router-link to="/terms">{{ t('landing.footer.terms') }}</router-link>
-                <span>|</span>
-                <router-link to="/privacy">{{ t('landing.footer.privacy') }}</router-link>
-                <span>|</span>
-                <router-link to="/cookies">{{ t('landing.footer.cookies') }}</router-link>
-            </div>
-            <div class="lang-switcher">
-                <router-link
-                    v-for="lang in availableLangs"
-                    :key="lang.code"
-                    :to="{ name: 'landing', params: { lang: lang.code } }"
-                    :class="['lang-link', { active: locale === lang.code }]"
-                >{{ lang.label }}</router-link>
-            </div>
-        </footer>
     </div>
 </template>
 
 <style scoped>
-.landing-container { display: flex; flex-direction: column; min-height: 100vh; font-family: var(--font-content); background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary)); color: var(--text-primary); text-align: center; padding: 20px; }
+.landing-container { display: flex; flex-direction: column; flex-grow: 1; font-family: var(--font-content); color: var(--text-primary); text-align: center; padding: 20px; }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; max-width: 800px; margin: 0 auto; }
-.title { font-size: 3.5rem; color: var(--color-accent-text); text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.6); margin-bottom: 15px; }
 .subtitle { font-size: 1.3rem; color: var(--text-secondary); font-style: italic; margin-bottom: 40px; line-height: 1.6; }
 
 
@@ -432,15 +405,5 @@ const handleSignup = async (event) => {
 .disclaimer-button { background: none; border: none; color: var(--color-accent-text); cursor: pointer; font-style: italic; text-decoration: underline; padding: 0 5px; font-size: 0.9rem; }
 .disclaimer-more { margin-top: 15px; text-align: justify; }
 
-.footer { padding: 15px; border-top: 1px solid var(--border-primary); }
-.footer-links { margin-bottom: 10px; }
-.footer-links a { color: var(--text-secondary); text-decoration: none; margin: 0 15px; transition: color 0.3s; }
-.footer-links a:hover { color: var(--color-accent-text); }
-.footer-links span { color: var(--text-tertiary); }
-
-.lang-switcher { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-.lang-link { color: var(--text-tertiary); text-decoration: none; font-size: 0.85rem; padding: 4px 10px; border-radius: 4px; border: 1px solid transparent; transition: all 0.3s; }
-.lang-link:hover { color: var(--text-primary); border-color: var(--border-primary); }
-.lang-link.active { color: var(--color-accent-text); border-color: var(--color-accent-text); font-weight: bold; }
 
 </style>
