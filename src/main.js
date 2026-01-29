@@ -7,6 +7,9 @@ import router from './router'
 import { useAuthStore } from './stores/auth.js'
 import es from './locales/es.json'
 import en from './locales/en.json'
+import it from './locales/it.json'
+import pt from './locales/pt.json'
+import fr from './locales/fr.json'
 import { initCookieConsent } from './utils/cookieConsent.js'
 
 // Create i18n instance
@@ -16,7 +19,10 @@ const i18n = createI18n({
   fallbackLocale: 'es',
   messages: {
     es,
-    en
+    en,
+    it,
+    pt,
+    fr
   }
 })
 

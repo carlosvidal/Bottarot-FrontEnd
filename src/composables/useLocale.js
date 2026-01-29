@@ -10,8 +10,9 @@ export function useLocale() {
   // Load language preference on mount
   onMounted(async () => {
     // First check localStorage (most recent/reliable source)
+    const validLangs = ['es', 'en', 'it', 'pt', 'fr']
     const savedLang = localStorage.getItem('language')
-    if (savedLang && (savedLang === 'es' || savedLang === 'en')) {
+    if (savedLang && validLangs.includes(savedLang)) {
       locale.value = savedLang
       return
     }
@@ -25,7 +26,7 @@ export function useLocale() {
           .eq('id', auth.user.id)
           .maybeSingle()
 
-        if (profile?.language && (profile.language === 'es' || profile.language === 'en')) {
+        if (profile?.language && validLangs.includes(profile.language)) {
           locale.value = profile.language
           localStorage.setItem('language', profile.language)
         }

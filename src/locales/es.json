@@ -115,7 +115,10 @@
     },
     "languages": {
       "es": "Español",
-      "en": "English"
+      "en": "English",
+      "it": "Italiano",
+      "pt": "Português",
+      "fr": "Français"
     },
     "timezones": {
       "mexicoCity": "Ciudad de México (GMT-6)",
@@ -146,18 +149,62 @@
     }
   },
   "landing": {
-    "welcome": "Bienvenido a Free Tarot Fun",
-    "subtitle": "Tu guía mística impulsada por inteligencia artificial",
-    "getStarted": "Comenzar",
-    "learnMore": "Saber más",
-    "features": {
-      "title": "Características",
-      "ai": "IA Avanzada",
-      "aiDesc": "Interpretaciones profundas y personalizadas",
-      "cards": "Cartas del Tarot",
-      "cardsDesc": "Selección de 78 cartas tradicionales",
-      "history": "Historial",
-      "historyDesc": "Guarda todas tus lecturas anteriores"
+    "title": "🔮 Free Tarot Fun 🔮",
+    "subtitle": "Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.",
+    "tryFreeReading": "🔮 Probar una Lectura Gratis",
+    "tryNote": "Sin registro · Tu futuro permanecerá velado",
+    "or": "o",
+    "claimIdentity": "✨ Reclama tu identidad espiritual ✨",
+    "trialBenefit": "Durante tus primeros 5 días, el tarot revelará tu futuro completo",
+    "connecting": "Conectando...",
+    "spiritualPath": "Tu Camino Espiritual",
+    "offers": {
+      "seeker": "Buscador",
+      "seekerPrice": "Gratis",
+      "seekerFeature1": "1 lectura por día",
+      "seekerFeature2": "5 futuros revelados",
+      "seekerFeature3": "Historial limitado",
+      "initiation": "Ritual de Iniciación",
+      "initiationPrice": "$1",
+      "initiationPeriod": "/ 7 días",
+      "initiationFeature1": "Lecturas ilimitadas",
+      "initiationFeature2": "Futuro siempre visible",
+      "initiationFeature3": "Historial completo",
+      "monthly": "Pase Mensual",
+      "monthlyPrice": "$8",
+      "monthlyPeriod": "/ mes",
+      "monthlyFeature1": "Sin interrupciones",
+      "monthlyFeature2": "Todo desbloqueado",
+      "monthlyFeature3": "Mejor valor",
+      "specialOffer": "OFERTA ESPECIAL"
+    },
+    "signup": {
+      "almostDone": "Casi listo...",
+      "completeProfile": "Completa tu perfil para continuar.",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre",
+      "gender": "Género",
+      "genderPlaceholder": "Selecciona una opción",
+      "male": "Masculino",
+      "female": "Femenino",
+      "nonBinary": "No binario",
+      "preferNotToSay": "Prefiero no decir",
+      "other": "Otro",
+      "dateOfBirth": "Fecha de Nacimiento",
+      "acceptTerms": "Acepto los",
+      "termsLink": "Términos y Condiciones",
+      "finishRegistration": "Finalizar Registro"
+    },
+    "disclaimer": {
+      "text": "Recuerda que el tarot es una herramienta de guía y autoconocimiento. Las lecturas ofrecen perspectivas y no deben ser tomadas como predicciones absolutas del futuro.",
+      "showMore": "Saber más...",
+      "showLess": "Mostrar menos",
+      "extended": "Este servicio utiliza un modelo de inteligencia artificial para generar interpretaciones basadas en los arquetipos y simbolismo del tarot Rider-Waite. No reemplaza la consulta con un profesional del tarot ni constituye asesoramiento legal, financiero, médico o de cualquier otro tipo profesional. Las decisiones que tomes basadas en estas lecturas son de tu exclusiva responsabilidad. La aleatoriedad de las cartas es gestionada digitalmente y la interpretación se genera en tiempo real, lo que significa que dos preguntas idénticas no necesariamente producirán la misma respuesta."
+    },
+    "footer": {
+      "terms": "Términos y Condiciones",
+      "privacy": "Políticas de Privacidad",
+      "cookies": "Políticas de Cookies"
     }
   },
   "checkout": {

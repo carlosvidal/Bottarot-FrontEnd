@@ -1,10 +1,38 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, watch, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+const { t, locale } = useI18n();
+
+const availableLangs = [
+  { code: 'es', label: 'ES' },
+  { code: 'en', label: 'EN' },
+  { code: 'it', label: 'IT' },
+  { code: 'pt', label: 'PT' },
+  { code: 'fr', label: 'FR' }
+];
+
+// Set locale from route param
+const setLangFromRoute = (lang) => {
+  if (lang && availableLangs.some(l => l.code === lang)) {
+    locale.value = lang;
+    localStorage.setItem('language', lang);
+  }
+};
+
+onMounted(() => {
+  setLangFromRoute(route.params.lang);
+});
+
+// Watch route param changes (clicking lang links doesn't remount)
+watch(() => route.params.lang, (newLang) => {
+  setLangFromRoute(newLang);
+});
 
 // Watch for auth state changes and redirect when user becomes fully registered
 watch(
@@ -97,74 +125,74 @@ const handleSignup = async (event) => {
     <div class="landing-container">
 
         <div class="main-content">
-            <h1 class="title">🔮 Free Tarot Fun 🔮</h1>
+            <h1 class="title">{{ t('landing.title') }}</h1>
 
             <!-- Default Logged-out View -->
             <div v-if="!showSignupForm && !auth.needsRegistration">
-                <p class="subtitle">Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.</p>
+                <p class="subtitle">{{ t('landing.subtitle') }}</p>
 
                 <!-- Try anonymously first -->
                 <div class="try-section">
                     <router-link to="/chat" class="try-button">
-                        🔮 Probar una Lectura Gratis
+                        {{ t('landing.tryFreeReading') }}
                     </router-link>
-                    <p class="try-note">Sin registro · Tu futuro permanecerá velado</p>
+                    <p class="try-note">{{ t('landing.tryNote') }}</p>
                 </div>
 
                 <div class="divider-section">
                     <span class="divider-line"></span>
-                    <span class="divider-text">o</span>
+                    <span class="divider-text">{{ t('landing.or') }}</span>
                     <span class="divider-line"></span>
                 </div>
 
                 <div class="social-login">
-                    <p class="register-title">✨ Reclama tu identidad espiritual ✨</p>
-                    <p class="register-benefit">Durante tus primeros 5 días, el tarot revelará tu futuro completo</p>
+                    <p class="register-title">{{ t('landing.claimIdentity') }}</p>
+                    <p class="register-benefit">{{ t('landing.trialBenefit') }}</p>
                     <div class="social-buttons">
                         <button @click="handleGoogleLogin" class="social-btn google" :disabled="auth.loading">
-                            {{ auth.loading ? 'Conectando...' : 'Google' }}
+                            {{ auth.loading ? t('landing.connecting') : 'Google' }}
                         </button>
                         <button @click="handleFacebookLogin" class="social-btn facebook" :disabled="auth.loading">
-                            {{ auth.loading ? 'Conectando...' : 'Facebook' }}
+                            {{ auth.loading ? t('landing.connecting') : 'Facebook' }}
                         </button>
                     </div>
                 </div>
 
                 <div class="offer-section">
-                    <h2>Tu Camino Espiritual</h2>
+                    <h2>{{ t('landing.spiritualPath') }}</h2>
                     <div class="offers">
                         <div class="offer-card free-tier">
                             <div class="offer-icon">🌙</div>
-                            <h3>Buscador</h3>
-                            <p class="offer-price">Gratis</p>
+                            <h3>{{ t('landing.offers.seeker') }}</h3>
+                            <p class="offer-price">{{ t('landing.offers.seekerPrice') }}</p>
                             <ul class="offer-features">
-                                <li>1 lectura por día</li>
-                                <li>5 futuros revelados</li>
-                                <li>Historial limitado</li>
+                                <li>{{ t('landing.offers.seekerFeature1') }}</li>
+                                <li>{{ t('landing.offers.seekerFeature2') }}</li>
+                                <li>{{ t('landing.offers.seekerFeature3') }}</li>
                             </ul>
                         </div>
                         <router-link to="/checkout" class="offer-card-link">
                             <div class="offer-card premium">
-                                <div class="offer-badge">OFERTA ESPECIAL</div>
+                                <div class="offer-badge">{{ t('landing.offers.specialOffer') }}</div>
                                 <div class="offer-icon">🔮</div>
-                                <h3>Ritual de Iniciación</h3>
-                                <p class="offer-price"><strong>$1</strong> <span class="price-period">/ 7 días</span></p>
+                                <h3>{{ t('landing.offers.initiation') }}</h3>
+                                <p class="offer-price"><strong>{{ t('landing.offers.initiationPrice') }}</strong> <span class="price-period">{{ t('landing.offers.initiationPeriod') }}</span></p>
                                 <ul class="offer-features">
-                                    <li>Lecturas ilimitadas</li>
-                                    <li>Futuro siempre visible</li>
-                                    <li>Historial completo</li>
+                                    <li>{{ t('landing.offers.initiationFeature1') }}</li>
+                                    <li>{{ t('landing.offers.initiationFeature2') }}</li>
+                                    <li>{{ t('landing.offers.initiationFeature3') }}</li>
                                 </ul>
                             </div>
                         </router-link>
                         <router-link to="/checkout" class="offer-card-link">
                             <div class="offer-card">
                                 <div class="offer-icon">⭐</div>
-                                <h3>Pase Mensual</h3>
-                                <p class="offer-price"><strong>$8</strong> <span class="price-period">/ mes</span></p>
+                                <h3>{{ t('landing.offers.monthly') }}</h3>
+                                <p class="offer-price"><strong>{{ t('landing.offers.monthlyPrice') }}</strong> <span class="price-period">{{ t('landing.offers.monthlyPeriod') }}</span></p>
                                 <ul class="offer-features">
-                                    <li>Sin interrupciones</li>
-                                    <li>Todo desbloqueado</li>
-                                    <li>Mejor valor</li>
+                                    <li>{{ t('landing.offers.monthlyFeature1') }}</li>
+                                    <li>{{ t('landing.offers.monthlyFeature2') }}</li>
+                                    <li>{{ t('landing.offers.monthlyFeature3') }}</li>
                                 </ul>
                             </div>
                         </router-link>
@@ -174,50 +202,60 @@ const handleSignup = async (event) => {
 
             <!-- Sign-up Form View -->
             <div v-if="showSignupForm || auth.needsRegistration" class="signup-form-container">
-                <h2 class="signup-title">Casi listo...</h2>
-                <p class="subtitle">Completa tu perfil para continuar.</p>
+                <h2 class="signup-title">{{ t('landing.signup.almostDone') }}</h2>
+                <p class="subtitle">{{ t('landing.signup.completeProfile') }}</p>
                 <form @submit.prevent="handleSignup" class="signup-form">
                     <div class="form-group">
-                        <label for="name">Nombre</label>
-                        <input type="text" id="name" name="name" placeholder="Tu nombre" required>
+                        <label for="name">{{ t('landing.signup.name') }}</label>
+                        <input type="text" id="name" name="name" :placeholder="t('landing.signup.namePlaceholder')" required>
                     </div>
                     <div class="form-group">
-                        <label for="gender">Género</label>
+                        <label for="gender">{{ t('landing.signup.gender') }}</label>
                         <select id="gender" name="gender" required>
-                            <option value="" disabled selected>Selecciona una opción</option>
-                            <option value="male">Masculino</option>
-                            <option value="female">Femenino</option>
-                            <option value="non-binary">No binario</option>
-                            <option value="prefer-not-to-say">Prefiero no decir</option>
-                            <option value="other">Otro</option>
+                            <option value="" disabled selected>{{ t('landing.signup.genderPlaceholder') }}</option>
+                            <option value="male">{{ t('landing.signup.male') }}</option>
+                            <option value="female">{{ t('landing.signup.female') }}</option>
+                            <option value="non-binary">{{ t('landing.signup.nonBinary') }}</option>
+                            <option value="prefer-not-to-say">{{ t('landing.signup.preferNotToSay') }}</option>
+                            <option value="other">{{ t('landing.signup.other') }}</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="dob">Fecha de Nacimiento</label>
+                        <label for="dob">{{ t('landing.signup.dateOfBirth') }}</label>
                         <input type="date" id="dob" name="dob" required>
                     </div>
                     <div class="form-group terms">
                         <input type="checkbox" id="terms" v-model="acceptedTerms">
-                        <label for="terms">Acepto los <router-link to="/terms" target="_blank">Términos y Condiciones</router-link>.</label>
+                        <label for="terms">{{ t('landing.signup.acceptTerms') }} <router-link to="/terms" target="_blank">{{ t('landing.signup.termsLink') }}</router-link>.</label>
                     </div>
-                    <button type="submit" class="main-cta-button" :disabled="!acceptedTerms">Finalizar Registro</button>
+                    <button type="submit" class="main-cta-button" :disabled="!acceptedTerms">{{ t('landing.signup.finishRegistration') }}</button>
                 </form>
             </div>
 
             <div class="disclaimer">
-                <p>Recuerda que el tarot es una herramienta de guía y autoconocimiento. Las lecturas ofrecen perspectivas y no deben ser tomadas como predicciones absolutas del futuro. <button @click="isDisclaimerExpanded = !isDisclaimerExpanded" class="disclaimer-button">{{ isDisclaimerExpanded ? 'Mostrar menos' : 'Saber más...' }}</button></p>
+                <p>{{ t('landing.disclaimer.text') }} <button @click="isDisclaimerExpanded = !isDisclaimerExpanded" class="disclaimer-button">{{ isDisclaimerExpanded ? t('landing.disclaimer.showLess') : t('landing.disclaimer.showMore') }}</button></p>
                 <div v-if="isDisclaimerExpanded" class="disclaimer-more">
-                    <p>Este servicio utiliza un modelo de inteligencia artificial para generar interpretaciones basadas en los arquetipos y simbolismo del tarot Rider-Waite. No reemplaza la consulta con un profesional del tarot ni constituye asesoramiento legal, financiero, médico o de cualquier otro tipo profesional. Las decisiones que tomes basadas en estas lecturas son de tu exclusiva responsabilidad. La aleatoriedad de las cartas es gestionada digitalmente y la interpretación se genera en tiempo real, lo que significa que dos preguntas idénticas no necesariamente producirán la misma respuesta.</p>
+                    <p>{{ t('landing.disclaimer.extended') }}</p>
                 </div>
             </div>
         </div>
 
         <footer class="footer">
-            <router-link to="/terms">Términos y Condiciones</router-link>
-            <span>|</span>
-            <router-link to="/privacy">Políticas de Privacidad</router-link>
-            <span>|</span>
-            <router-link to="/cookies">Políticas de Cookies</router-link>
+            <div class="footer-links">
+                <router-link to="/terms">{{ t('landing.footer.terms') }}</router-link>
+                <span>|</span>
+                <router-link to="/privacy">{{ t('landing.footer.privacy') }}</router-link>
+                <span>|</span>
+                <router-link to="/cookies">{{ t('landing.footer.cookies') }}</router-link>
+            </div>
+            <div class="lang-switcher">
+                <router-link
+                    v-for="lang in availableLangs"
+                    :key="lang.code"
+                    :to="{ name: 'landing', params: { lang: lang.code } }"
+                    :class="['lang-link', { active: locale === lang.code }]"
+                >{{ lang.label }}</router-link>
+            </div>
         </footer>
     </div>
 </template>
@@ -395,8 +433,14 @@ const handleSignup = async (event) => {
 .disclaimer-more { margin-top: 15px; text-align: justify; }
 
 .footer { padding: 15px; border-top: 1px solid var(--border-primary); }
-.footer a, .footer .router-link-active { color: var(--text-secondary); text-decoration: none; margin: 0 15px; transition: color 0.3s; }
-.footer a:hover, .footer .router-link-active:hover { color: var(--color-accent-text); }
-.footer span { color: var(--text-tertiary); }
+.footer-links { margin-bottom: 10px; }
+.footer-links a { color: var(--text-secondary); text-decoration: none; margin: 0 15px; transition: color 0.3s; }
+.footer-links a:hover { color: var(--color-accent-text); }
+.footer-links span { color: var(--text-tertiary); }
+
+.lang-switcher { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.lang-link { color: var(--text-tertiary); text-decoration: none; font-size: 0.85rem; padding: 4px 10px; border-radius: 4px; border: 1px solid transparent; transition: all 0.3s; }
+.lang-link:hover { color: var(--text-primary); border-color: var(--border-primary); }
+.lang-link.active { color: var(--color-accent-text); border-color: var(--color-accent-text); font-weight: bold; }
 
 </style>

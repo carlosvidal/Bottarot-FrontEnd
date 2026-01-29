@@ -52,7 +52,7 @@ const router = createRouter({
       }
     },
     {
-      path: '/landing',
+      path: '/landing/:lang?',
       name: 'landing',
       component: Landing,
       beforeEnter: (to, from, next) => {
@@ -60,7 +60,12 @@ const router = createRouter({
         if (auth.isLoggedIn && auth.isFullyRegistered) {
           next({ name: 'new-chat' });
         } else {
-          next();
+          const validLangs = ['es', 'en', 'it', 'pt', 'fr'];
+          if (to.params.lang && !validLangs.includes(to.params.lang)) {
+            next({ name: 'landing', params: { lang: 'es' } });
+          } else {
+            next();
+          }
         }
       }
     },
