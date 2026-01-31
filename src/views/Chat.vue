@@ -325,16 +325,29 @@ const handleQuestionSubmitted = async (question) => {
     let showInterpretationTimer = null;
 
     try {
-        const historyForAgents = readings.value.slice(0, -1).map(r => ({ role: r.role, content: r.role === 'user' ? r.content : r.interpretation || r.content }));
+        const historyForAgents = readings.value.slice(0, -1).map(r => ({
+            role: r.role,
+            content: r.role === 'user' ? r.content : r.interpretation || r.content,
+            _isContextQuestion: r._isContextQuestion || false
+        }));
         const API_URL = import.meta.env.VITE_API_URL;
 
         // Use 'anonymous' as userId for non-authenticated users
         const effectiveUserId = userId || 'anonymous';
 
+        // Generate personal context for the reading
+        let personalContextStr = '';
+        try {
+            const personalContextData = await generatePersonalContext();
+            personalContextStr = personalContextData?.context || '';
+        } catch (ctxErr) {
+            console.warn('⚠️ Could not generate personal context:', ctxErr);
+        }
+
         const response = await fetch(`${API_URL}/api/chat/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, history: historyForAgents, userId: effectiveUserId, chatId })
+            body: JSON.stringify({ question, history: historyForAgents, personalContext: personalContextStr, userId: effectiveUserId, chatId })
         });
 
         if (!response.ok) {
@@ -501,6 +514,27 @@ const handleQuestionSubmitted = async (question) => {
                         chatStore.fetchChatList(userId);
                     }, 1000);
                 }
+            } else if (result.type === 'context_question') {
+                // Oracle is asking a contextual question before drawing cards
+                assistantMessage = {
+                    id: `local-${Date.now()}-ctx`,
+                    type: 'message',
+                    content: result.text,
+                    role: 'assistant',
+                    timestamp: new Date().toISOString(),
+                    _isContextQuestion: true
+                };
+                readings.value.push(assistantMessage);
+                scrollToBottom();
+
+                // Save context question to DB if authenticated
+                if (userId) {
+                    await saveMessageToDb({ chatId, userId, role: 'assistant', content: result.text });
+                }
+
+                // Reset loading - user needs to respond
+                isLoading.value = false;
+                return;
             } else {
                 assistantMessage = {
                     id: `local-${Date.now()}-ai`,
