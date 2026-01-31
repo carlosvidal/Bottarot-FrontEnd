@@ -334,4 +334,20 @@ select {
     border-color: var(--color-accent-text);
     font-weight: bold;
 }
+
+@media (max-width: 600px) {
+    .app-footer .footer-links {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .app-footer .footer-links span {
+        display: none;
+    }
+
+    .app-footer .footer-links a {
+        margin: 0;
+    }
+}
 </style>

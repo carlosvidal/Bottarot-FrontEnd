@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase.js'
 import { useI18n } from 'vue-i18n'
 import { useAnalytics } from '../composables/useAnalytics.js'
+import { LogOut } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -218,6 +219,12 @@ const formatDate = (dateString) => {
     }
 }
 
+const logout = () => {
+    localStorage.clear()
+    sessionStorage.clear()
+    window.location.href = '/'
+}
+
 // Also try on mounted
 onMounted(() => {
     console.log('Profile: Component mounted, auth.user:', !!auth.user)
@@ -338,6 +345,10 @@ onMounted(() => {
                     <span class="premium-badge">✨ {{ t('profile.premiumUser') }}</span>
                     <p class="renewal-info">{{ t('profile.renewal') }}: {{ formatDate(auth.userSubscription?.subscription_end_date) }}</p>
                 </div>
+                <button @click="logout" class="logout-button">
+                    <LogOut :size="16" />
+                    {{ t('nav.logout') }}
+                </button>
             </div>
         </div>
     </div>
@@ -597,5 +608,24 @@ p {
     color: var(--color-accent-text);
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+.logout-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--color-error);
+    border: 1px solid var(--color-error);
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+    background: rgba(255, 107, 107, 0.2);
+    transform: translateY(-2px);
 }
 </style>

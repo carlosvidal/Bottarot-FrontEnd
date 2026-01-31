@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { ArrowUp, Loader } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -14,26 +15,39 @@ const props = defineProps({
 const emit = defineEmits(['question-submitted']);
 
 const userQuestion = ref('');
+const textareaRef = ref(null);
 const maxQuestionLength = 500;
+
+const autoResize = () => {
+    const el = textareaRef.value;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+};
+
+watch(userQuestion, () => {
+    nextTick(autoResize);
+});
 
 const submitQuestion = () => {
     if (props.isDisabled || !userQuestion.value.trim()) return;
     emit('question-submitted', userQuestion.value);
-    userQuestion.value = ''; // Clear input after submitting
+    userQuestion.value = '';
+    nextTick(autoResize);
 };
 </script>
 
 <template>
     <div class="question-form-container">
         <div class="question-container">
-            <textarea v-model="userQuestion" class="question-input" :maxlength="maxQuestionLength"
+            <textarea ref="textareaRef" v-model="userQuestion" class="question-input" :maxlength="maxQuestionLength"
                 :placeholder="t('chat.placeholder')" @keyup.enter.exact="submitQuestion" :disabled="isDisabled"></textarea>
-            <p class="char-counter">{{ t('chat.charCount', { current: userQuestion.length, max: maxQuestionLength }) }}</p>
+            <button class="send-btn" @click="submitQuestion" :disabled="isDisabled || !userQuestion.trim()">
+                <Loader v-if="isDisabled" :size="18" class="spinner" />
+                <ArrowUp v-else :size="18" />
+            </button>
         </div>
-        <button class="draw-button" @click="submitQuestion" :disabled="isDisabled || !userQuestion.trim()">
-            <span v-if="isDisabled">{{ t('chat.thinking') }}</span>
-            <span v-else>{{ t('chat.submit') }}</span>
-        </button>
+        <p class="char-counter">{{ t('chat.charCount', { current: userQuestion.length, max: maxQuestionLength }) }}</p>
     </div>
 </template>
 
@@ -50,7 +64,7 @@ const submitQuestion = () => {
 
 .question-container {
     max-width: 800px;
-    margin: 0 auto 12px;
+    margin: 0 auto;
     position: relative;
 }
 
@@ -58,19 +72,21 @@ const submitQuestion = () => {
     display: block;
     width: 100%;
     padding: 12px;
-    padding-bottom: 28px;
+    padding-right: 50px;
     font-family: var(--font-content);
     font-size: 1rem;
     color: var(--text-primary);
     background-color: var(--bg-input);
     border: 2px solid var(--border-primary);
-    border-radius: 8px;
+    border-radius: 12px;
     resize: none;
-    min-height: 60px;
-    max-height: 120px;
+    min-height: 48px;
+    max-height: 200px;
+    overflow-y: auto;
     box-sizing: border-box;
     box-shadow: inset 0 2px 5px var(--shadow-sm);
-    transition: all 0.3s ease;
+    transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    field-sizing: content;
 }
 
 .question-input::placeholder {
@@ -85,49 +101,67 @@ const submitQuestion = () => {
     box-shadow: inset 0 2px 5px var(--shadow-sm), 0 0 12px var(--accent-glow);
 }
 
-.char-counter {
+.send-btn {
     position: absolute;
-    bottom: 10px;
-    right: 15px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.draw-button {
-    display: block;
-    margin: 0 auto;
+    right: 8px;
+    bottom: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
     background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
     color: var(--color-white);
-    border: none;
-    padding: 12px 25px;
-    font-size: 1.1rem;
-    border-radius: 8px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-.draw-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+.send-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
-.draw-button:disabled {
-    opacity: 0.6;
+.send-btn:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.char-counter {
+    max-width: 800px;
+    margin: 4px auto 0;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    padding: 0 4px;
 }
 
 /* Desktop styles */
 @media (min-width: 769px) {
-    .question-form-container { padding: 20px; }
-    .question-container { margin-bottom: 20px; }
+    .question-form-container { padding: 16px 20px; }
     .question-input {
-        padding: 15px;
-        padding-bottom: 30px;
+        padding: 14px;
+        padding-right: 54px;
         font-size: 1.1rem;
-        min-height: 70px;
-        max-height: 150px;
-        resize: vertical;
+        min-height: 52px;
+        max-height: 250px;
+    }
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        right: 10px;
+        bottom: 10px;
     }
 }
 </style>

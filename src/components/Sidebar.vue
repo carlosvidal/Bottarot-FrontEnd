@@ -3,8 +3,11 @@ import { onMounted, computed, watch, ref, nextTick } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chats';
 import { useRouter } from 'vue-router';
-import { PlusCircle, LogOut, Crown, Moon, Sun } from 'lucide-vue-next';
+import { PlusCircle, Crown, Moon, Sun, UserPlus } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
+import AuthModal from './AuthModal.vue';
+import logoDark from '../assets/Free-Tarot-Fun-sidebar-logo-darkmode.svg';
+import logoLight from '../assets/Free-Tarot-Fun-sidebar-logo-lightmode.svg';
 
 const emit = defineEmits(['close-sidebar']);
 const router = useRouter();
@@ -71,11 +74,7 @@ const createNewChat = () => {
     emit('close-sidebar');
 };
 
-const logout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = '/';
-};
+const showAuthModal = ref(false);
 
 // Theme toggle functionality
 const isDarkMode = ref(true);
@@ -136,20 +135,19 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 
 <template>
     <aside class="sidebar" v-if="auth && chatStore">
-        <div class="sidebar-content">
-            <!-- Profile Section -->
-            <div class="profile-section">
-                <div class="avatar">{{ userAvatar }}</div>
-                <div class="profile-info">
-                    <span class="username">{{ userName }}</span>
-                    <router-link to="/profile" class="profile-link">{{ t('nav.profile') }}</router-link>
-                </div>
-                <button @click="toggleTheme" class="theme-toggle-btn" :title="isDarkMode ? t('sidebar.changeToLightMode') : t('sidebar.changeToDarkMode')">
-                    <Moon v-if="isDarkMode" :size="20" />
-                    <Sun v-else :size="20" />
-                </button>
-            </div>
+        <!-- Header: Logo + Dark Mode Toggle -->
+        <div class="sidebar-header">
+            <router-link to="/landing" class="sidebar-logo-link" @click="emit('close-sidebar')">
+                <img :src="logoDark" alt="Free Tarot Fun" class="sidebar-logo logo-dark" />
+                <img :src="logoLight" alt="Free Tarot Fun" class="sidebar-logo logo-light" />
+            </router-link>
+            <button @click="toggleTheme" class="theme-toggle-btn" :title="isDarkMode ? t('sidebar.changeToLightMode') : t('sidebar.changeToDarkMode')">
+                <Moon v-if="isDarkMode" :size="20" />
+                <Sun v-else :size="20" />
+            </button>
+        </div>
 
+        <div class="sidebar-content">
             <!-- New Chat Button -->
             <button
                 @click="createNewChat"
@@ -162,13 +160,13 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
             </button>
 
             <!-- Límite semanal para usuarios gratuitos -->
-            <div v-if="!auth.isPremiumUser" class="weekly-limit">
+            <div v-if="auth.isLoggedIn && !auth.isPremiumUser" class="weekly-limit">
                 <span v-if="canCreateNewChat">{{ t('sidebar.chatsThisWeek', { count: remainingChatsThisWeek }, remainingChatsThisWeek) }}</span>
                 <span v-else class="limit-reached">{{ t('sidebar.weeklyLimitReached') }}</span>
             </div>
 
             <!-- Chat History -->
-            <nav class="chat-history">
+            <nav v-if="auth.isLoggedIn" class="chat-history">
                 <h3 class="history-title">{{ t('sidebar.history') }}</h3>
                 <div v-if="chatStore.isLoading" class="loading-text">{{ t('sidebar.loadingChats') }}</div>
                 <ul v-else-if="visibleChats.length > 0">
@@ -193,29 +191,37 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
                     </router-link>
                 </div>
             </nav>
-
-            <!-- Actions -->
-            <div class="sidebar-actions">
-                <router-link v-if="!auth.isPremiumUser" to="/checkout" class="action-button upgrade-btn">
-                    <Crown :size="18" />
-                    <span>{{ t('nav.upgradeToPremium') }}</span>
-                </router-link>
-                <div v-else class="premium-badge-sidebar">
-                    <Crown :size="18" />
-                    <span>{{ t('sidebar.premiumActive') }}</span>
-                </div>
-                <button @click="logout" class="action-button logout-btn">
-                    <LogOut :size="18" />
-                    <span>{{ t('nav.logout') }}</span>
-                </button>
-            </div>
         </div>
 
-        <footer class="sidebar-footer">
-            <router-link to="/terms">{{ t('nav.terms') }}</router-link>
-            <span>·</span>
-            <router-link to="/privacy">{{ t('nav.privacy') }}</router-link>
-        </footer>
+        <!-- Actions -->
+        <div class="sidebar-actions">
+            <!-- Upgrade button for non-premium users (logged in or anonymous) -->
+            <router-link v-if="!auth.isPremiumUser" to="/checkout" class="action-button upgrade-btn">
+                <Crown :size="18" />
+                <span>{{ t('nav.upgradeToPremium') }}</span>
+            </router-link>
+
+            <template v-if="auth.isLoggedIn">
+                <!-- Profile info at bottom -->
+                <router-link to="/profile" class="profile-bottom" @click="emit('close-sidebar')">
+                    <div class="avatar">{{ userAvatar }}</div>
+                    <div class="profile-info">
+                        <span class="username">{{ userName }}</span>
+                        <span class="profile-link-text">{{ t('nav.profile') }}</span>
+                    </div>
+                </router-link>
+            </template>
+            <template v-else>
+                <button @click="showAuthModal = true" class="action-button signup-btn">
+                    <UserPlus :size="18" />
+                    <span>{{ t('auth.signup') }}</span>
+                </button>
+            </template>
+        </div>
+
+        <Teleport to="body">
+            <AuthModal :isOpen="showAuthModal" @close="showAuthModal = false" />
+        </Teleport>
     </aside>
 </template>
 
@@ -236,20 +242,63 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
-/* Profile Section */
-.profile-section {
+/* Sidebar Header */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-primary);
+    flex-shrink: 0;
+}
+
+.sidebar-logo-link {
+    display: inline-block;
+}
+
+.sidebar-logo {
+    height: 28px;
+    width: auto;
+}
+
+.sidebar-logo.logo-dark {
+    display: block;
+}
+
+.sidebar-logo.logo-light {
+    display: none;
+}
+
+:global(.light-mode) .sidebar-logo.logo-dark {
+    display: none;
+}
+
+:global(.light-mode) .sidebar-logo.logo-light {
+    display: block;
+}
+
+/* Profile Bottom */
+.profile-bottom {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-primary);
+    padding: 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: background-color 0.2s ease;
+}
+
+.profile-bottom:hover {
+    background-color: var(--bg-tertiary);
 }
 
 .avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--bg-tertiary);
     color: var(--color-accent-text);
@@ -258,6 +307,7 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     justify-content: center;
     font-weight: bold;
     flex-shrink: 0;
+    font-size: 0.9rem;
 }
 
 .profile-info {
@@ -271,12 +321,12 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.9rem;
 }
 
-.profile-link {
-    font-size: 0.85rem;
+.profile-link-text {
+    font-size: 0.8rem;
     color: var(--color-accent-text);
-    text-decoration: none;
 }
 
 /* Theme Toggle Button */
@@ -308,7 +358,6 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 16px;
     padding: 12px 16px;
     background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
     color: var(--color-white);
@@ -433,12 +482,12 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
 
 /* Sidebar Actions */
 .sidebar-actions {
-    margin-top: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 20px;
+    padding: 20px;
     border-top: 1px solid var(--border-primary);
+    flex-shrink: 0;
 }
 
 .action-button {
@@ -466,49 +515,14 @@ watch(() => router.currentRoute.value.fullPath, (newPath, oldPath) => {
     background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
 }
 
-.logout-btn {
-    background-color: var(--bg-card);
-    color: var(--text-secondary);
+.signup-btn {
+    background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover));
+    color: var(--color-white);
 }
 
-.logout-btn:hover {
-    background-color: var(--bg-elevated);
+.signup-btn:hover {
+    background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
+    transform: translateY(-1px);
 }
 
-.premium-badge-sidebar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 6px;
-    background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 237, 74, 0.1));
-    border: 1px solid var(--color-accent);
-    color: var(--color-accent-text);
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-/* Sidebar Footer */
-.sidebar-footer {
-    padding: 16px 20px;
-    text-align: center;
-    font-size: 0.85rem;
-    border-top: 1px solid var(--border-primary);
-    flex-shrink: 0;
-}
-
-.sidebar-footer a {
-    color: var(--text-tertiary);
-    text-decoration: none;
-}
-
-.sidebar-footer a:hover {
-    color: var(--text-secondary);
-}
-
-.sidebar-footer span {
-    margin: 0 8px;
-    color: var(--text-tertiary);
-}
 </style>
