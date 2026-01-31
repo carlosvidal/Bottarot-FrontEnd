@@ -66,7 +66,16 @@
     "oracleThinking": "O oráculo está meditando sobre seu destino...",
     "listen": "Ouvir",
     "pause": "Pausar",
-    "loading": "Carregando..."
+    "loading": "Carregando...",
+    "sectionLabels": {
+      "pasado": "Seu Passado",
+      "presente": "Seu Presente",
+      "futuro": "Seu Futuro",
+      "sintesis": "Visão Completa",
+      "consejo": "Conselho do Oráculo"
+    },
+    "futureTeaser": "O resto do seu futuro permanece velado...",
+    "hiddenSections": "Desbloqueie sua leitura completa para ver a síntese e o conselho do oráculo"
   },
   "auth": {
     "login": "Entrar",

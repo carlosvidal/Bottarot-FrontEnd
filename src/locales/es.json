@@ -66,7 +66,16 @@
     "oracleThinking": "El oráculo está meditando sobre tu destino...",
     "listen": "Escuchar",
     "pause": "Pausar",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "sectionLabels": {
+      "pasado": "Tu Pasado",
+      "presente": "Tu Presente",
+      "futuro": "Tu Futuro",
+      "sintesis": "Visión Completa",
+      "consejo": "Consejo del Oráculo"
+    },
+    "futureTeaser": "El resto de tu futuro permanece velado...",
+    "hiddenSections": "Desbloquea tu lectura completa para ver la síntesis y el consejo del oráculo"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -151,7 +160,7 @@
   "landing": {
     "title": "🔮 Free Tarot Fun 🔮",
     "subtitle": "Descubre lo que el destino tiene para ti. Recibe guía sobre tu pasado, presente y futuro a través de la sabiduría del Tarot.",
-    "tryFreeReading": "🔮 Probar una Lectura Gratis",
+    "tryFreeReading": "🔮 Prueba una Lectura Gratis",
     "tryNote": "Sin registro · Tu futuro permanecerá velado",
     "or": "o",
     "claimIdentity": "✨ Reclama tu identidad espiritual ✨",

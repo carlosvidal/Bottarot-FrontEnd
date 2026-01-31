@@ -59,7 +59,56 @@ const loadChatHistory = async (chatId) => {
                         isFlipped: true
                     }));
                 }
-                loadedReadings.push({ id: msg.message_id, type: msg.cards?.length > 0 ? 'tarotReading' : 'message', question: lastUserQuestion, drawnCards: processedCards, interpretation: msg.content, content: msg.content, isLoading: false, role: 'assistant', timestamp: msg.created_at });
+
+                // Parse v2 structured content or fallback to v1 plain text
+                let sections = null;
+                let interpretation = msg.content;
+                let msgFutureHidden = false;
+
+                try {
+                    const parsed = JSON.parse(msg.content);
+                    if (parsed._version === 2 && parsed.sections) {
+                        // v2 format: apply paywall filter for history
+                        const canSeeFuture = auth.canSeeFuture || auth.isPremiumUser;
+                        sections = {};
+                        const sectionOrder = ['saludo', 'pasado', 'presente', 'futuro', 'sintesis', 'consejo'];
+                        for (const key of sectionOrder) {
+                            if (!parsed.sections[key]) continue;
+                            if (!canSeeFuture && key === 'futuro') {
+                                const firstSentence = parsed.sections[key].match(/^[^.!?]*[.!?]/);
+                                sections[key] = {
+                                    text: firstSentence ? firstSentence[0] + ' ...' : parsed.sections[key].substring(0, 100) + '...',
+                                    isTeaser: true
+                                };
+                                msgFutureHidden = true;
+                            } else if (!canSeeFuture && (key === 'sintesis' || key === 'consejo')) {
+                                // Skip hidden sections
+                                msgFutureHidden = true;
+                            } else {
+                                sections[key] = { text: parsed.sections[key], isTeaser: false };
+                            }
+                        }
+                        interpretation = parsed.rawText || msg.content;
+                    }
+                } catch (e) {
+                    // v1 plain text — sections stays null
+                }
+
+                loadedReadings.push({
+                    id: msg.message_id,
+                    type: msg.cards?.length > 0 ? 'tarotReading' : 'message',
+                    question: lastUserQuestion,
+                    drawnCards: processedCards,
+                    interpretation: interpretation,
+                    sections: sections,
+                    content: msg.content,
+                    isLoading: false,
+                    role: 'assistant',
+                    timestamp: msg.created_at,
+                    futureHidden: msgFutureHidden,
+                    ctaMessage: msgFutureHidden ? (auth.isAnonymousUser ? 'Para revelar tu futuro, reclama tu identidad espiritual' : 'Desbloquea tu futuro completo con un plan premium') : null,
+                    isAnonymous: auth.isAnonymousUser
+                });
                 lastUserQuestion = '';
             }
         });
@@ -246,6 +295,7 @@ const handleQuestionSubmitted = async (question) => {
                             question,
                             drawnCards: preparedCards,
                             interpretation: '',
+                            sections: {},
                             isLoading: true,
                             role: 'assistant',
                             timestamp: new Date().toISOString(),
@@ -268,7 +318,23 @@ const handleQuestionSubmitted = async (question) => {
                         });
                     }
 
-                    // Manejar evento de interpretación
+                    // Manejar evento de sección (v2)
+                    if (eventType === 'section') {
+                        console.log('📖 Section received:', data.section, data.isTeaser ? '(teaser)' : '');
+                        if (assistantMessage) {
+                            if (!assistantMessage.sections) assistantMessage.sections = {};
+                            assistantMessage.sections[data.section] = {
+                                text: data.text,
+                                isTeaser: data.isTeaser || false
+                            };
+                            // Trigger Vue reactivity
+                            assistantMessage.sections = { ...assistantMessage.sections };
+                            assistantMessage.isLoading = false;
+                        }
+                        nextTick().then(() => scrollToBottom());
+                    }
+
+                    // Manejar evento de interpretación (legacy/fallback)
                     if (eventType === 'interpretation') {
                         console.log('📖 Interpretation chunk:', data.text);
                         fullInterpretation += data.text;
@@ -340,11 +406,23 @@ const handleQuestionSubmitted = async (question) => {
 
         // Guardar en DB después de recibir todo (only for authenticated users)
         if (assistantMessage && receivedCards && userId) {
+            // Store structured sections if available (v2), else plain text (v1)
+            const hasSections = assistantMessage.sections && Object.keys(assistantMessage.sections).length > 0;
+            const contentToSave = hasSections
+                ? JSON.stringify({
+                    _version: 2,
+                    sections: Object.fromEntries(
+                        Object.entries(assistantMessage.sections).map(([k, v]) => [k, v.text || v])
+                    ),
+                    rawText: fullInterpretation
+                })
+                : fullInterpretation;
+
             await saveMessageToDb({
                 chatId,
                 userId,
                 role: 'assistant',
-                content: fullInterpretation,
+                content: contentToSave,
                 cards: receivedCards
             });
 
@@ -423,6 +501,7 @@ watch(readings, scrollToBottom, { deep: true });
                             v-else-if="item.type === 'tarotReading'"
                             :cards="item.drawnCards"
                             :interpretation="item.interpretation"
+                            :sections="item.sections || null"
                             :isLoading="item.isLoading"
                             :futureHidden="item.futureHidden || false"
                             :ctaMessage="item.ctaMessage"

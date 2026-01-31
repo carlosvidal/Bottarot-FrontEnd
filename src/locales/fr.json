@@ -66,7 +66,16 @@
     "oracleThinking": "L'oracle médite sur votre destin...",
     "listen": "Écouter",
     "pause": "Pause",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "sectionLabels": {
+      "pasado": "Votre Passé",
+      "presente": "Votre Présent",
+      "futuro": "Votre Futur",
+      "sintesis": "Vision Complète",
+      "consejo": "Conseil de l'Oracle"
+    },
+    "futureTeaser": "Le reste de votre avenir reste voilé...",
+    "hiddenSections": "Débloquez votre lecture complète pour voir la synthèse et le conseil de l'oracle"
   },
   "auth": {
     "login": "Se connecter",

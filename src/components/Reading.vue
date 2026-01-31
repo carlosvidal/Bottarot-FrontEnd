@@ -18,6 +18,10 @@ const props = defineProps({
         type: String,
         default: ''
     },
+    sections: {
+        type: Object,
+        default: null
+    },
     isLoading: {
         type: Boolean,
         default: false
@@ -75,12 +79,54 @@ const formattedInterpretation = computed(() => {
     return marked.parse(props.interpretation);
 });
 
+// Section-based rendering (v2)
+const hasSections = computed(() => props.sections && Object.keys(props.sections).length > 0);
+
+const sectionOrder = ['saludo', 'pasado', 'presente', 'futuro', 'sintesis', 'consejo'];
+
+const sectionLabels = computed(() => ({
+    saludo: '',
+    pasado: t('reading.sectionLabels.pasado'),
+    presente: t('reading.sectionLabels.presente'),
+    futuro: t('reading.sectionLabels.futuro'),
+    sintesis: t('reading.sectionLabels.sintesis'),
+    consejo: t('reading.sectionLabels.consejo')
+}));
+
+const visibleSections = computed(() => {
+    if (!hasSections.value) return [];
+    return sectionOrder
+        .filter(key => props.sections[key])
+        .map(key => {
+            const section = props.sections[key];
+            const text = section.text || section;
+            const isTeaser = section.isTeaser || false;
+            return {
+                key,
+                text,
+                isTeaser,
+                html: marked.parse(text)
+            };
+        });
+});
+
+// Text for TTS: only read fully visible sections (exclude teasers)
+const ttsText = computed(() => {
+    if (hasSections.value) {
+        return visibleSections.value
+            .filter(s => !s.isTeaser)
+            .map(s => s.text)
+            .join('. ');
+    }
+    return props.interpretation;
+});
+
 // TTS functionality
 const audio = ref(null);
 const audioState = ref('idle'); // idle, loading, playing, error
 
 const playAudio = async () => {
-    if (!props.interpretation) return;
+    if (!ttsText.value) return;
 
     if (audioState.value === 'playing') {
         audio.value.pause();
@@ -105,7 +151,7 @@ const playAudio = async () => {
                 'xi-api-key': ELEVENLABS_API_KEY
             },
             body: JSON.stringify({
-                text: props.interpretation,
+                text: ttsText.value,
                 model_id: 'eleven_multilingual_v2',
                 voice_settings: {
                     stability: 0.5,
@@ -179,11 +225,50 @@ const playAudio = async () => {
             </div>
         </div>
 
-        <div v-if="isLoading && !interpretation" class="interpretation-loading">
+        <div v-if="isLoading && !interpretation && !hasSections" class="interpretation-loading">
             {{ t('reading.oracleThinking') }}
         </div>
 
-        <div v-if="interpretation" class="interpretation-wrapper">
+        <!-- V2: Section bubbles -->
+        <template v-if="hasSections">
+            <div class="sections-wrapper">
+                <div class="interpretation-header">
+                    <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
+                        <span v-if="audioState === 'idle' || audioState === 'error'">🔊 {{ t('reading.listen') }}</span>
+                        <span v-if="audioState === 'loading'">⏳ {{ t('reading.loading') }}</span>
+                        <span v-if="audioState === 'playing'">⏸️ {{ t('reading.pause') }}</span>
+                    </button>
+                </div>
+                <div
+                    v-for="section in visibleSections"
+                    :key="section.key"
+                    class="interpretation-bubble"
+                    :class="[`bubble-${section.key}`, { 'bubble-teaser': section.isTeaser }]"
+                >
+                    <div v-if="sectionLabels[section.key]" class="bubble-label">
+                        {{ sectionLabels[section.key] }}
+                    </div>
+                    <div class="bubble-content" v-html="section.html"></div>
+                    <!-- Teaser overlay for truncated future -->
+                    <div v-if="section.isTeaser" class="bubble-teaser-overlay">
+                        <div class="bubble-teaser-fade"></div>
+                        <div class="bubble-teaser-cta">
+                            <p class="bubble-teaser-message">{{ ctaMessage || t('reading.futureTeaser') }}</p>
+                            <button @click="handleCtaClick" class="unlock-btn">
+                                {{ isAnonymous ? t('cards.claimIdentity') : t('cards.unlockFuture') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Message when sections are hidden -->
+                <div v-if="futureHidden" class="hidden-sections-notice">
+                    <p>{{ t('reading.hiddenSections') }}</p>
+                </div>
+            </div>
+        </template>
+
+        <!-- V1 fallback: single interpretation block -->
+        <div v-else-if="interpretation" class="interpretation-wrapper">
             <div class="interpretation-header">
                 <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
                     <span v-if="audioState === 'idle' || audioState === 'error'">🔊 {{ t('reading.listen') }}</span>
@@ -323,6 +408,81 @@ const playAudio = async () => {
     font-size: 1.05rem;
     line-height: 1.8;
     color: var(--text-primary);
+}
+
+/* Section Bubbles (v2) */
+.sections-wrapper {
+    margin: 20px auto 0;
+}
+
+.interpretation-bubble {
+    margin: 12px 0;
+    background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
+    border-radius: 15px;
+    padding: 20px 25px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInBubble 0.5s ease-out forwards;
+}
+
+.bubble-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--color-accent-text);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.bubble-content {
+    font-family: var(--font-content);
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+}
+
+.bubble-content :deep(p) {
+    margin: 0;
+}
+
+.bubble-teaser {
+    min-height: 120px;
+}
+
+.bubble-teaser .bubble-content {
+    mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+.bubble-teaser-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 50px 20px 20px;
+    text-align: center;
+    background: linear-gradient(transparent, var(--bg-card) 40%);
+}
+
+.bubble-teaser-message {
+    color: var(--color-accent-text);
+    font-size: 0.95rem;
+    font-style: italic;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.hidden-sections-notice {
+    text-align: center;
+    padding: 16px;
+    color: var(--text-tertiary);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+@keyframes fadeInBubble {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Future Hidden Styles */

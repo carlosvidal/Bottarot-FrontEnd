@@ -66,7 +66,16 @@
     "oracleThinking": "The oracle is contemplating your destiny...",
     "listen": "Listen",
     "pause": "Pause",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "sectionLabels": {
+      "pasado": "Your Past",
+      "presente": "Your Present",
+      "futuro": "Your Future",
+      "sintesis": "Full Vision",
+      "consejo": "Oracle's Advice"
+    },
+    "futureTeaser": "The rest of your future remains veiled...",
+    "hiddenSections": "Unlock your full reading to see the synthesis and the oracle's advice"
   },
   "auth": {
     "login": "Log In",
