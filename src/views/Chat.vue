@@ -32,6 +32,7 @@ const isAnonymousSession = ref(false);
 const showAuthModal = ref(false);
 const showCheckoutModal = ref(false);
 const pendingRevealReadingId = ref(null);
+const isTransferring = ref(false); // blocks history load during post-OAuth transfer
 
 const route = useRoute();
 const router = useRouter();
@@ -571,6 +572,20 @@ const handleQuestionSubmitted = async (question) => {
 };
 
 // 3. Lifecycle Hooks and Watchers
+
+// Helper: wait for auth store to finish initializing
+const waitForAuth = () => {
+    if (auth.isInitialized) return Promise.resolve();
+    return new Promise(resolve => {
+        const unwatch = watch(() => auth.isInitialized, (initialized) => {
+            if (initialized) {
+                unwatch();
+                resolve();
+            }
+        }, { immediate: true });
+    });
+};
+
 onMounted(async () => {
     try {
         personalizedGreeting.value = await getPersonalizedGreeting();
@@ -580,43 +595,65 @@ onMounted(async () => {
 
     // Post-OAuth transfer: check if we have a pending anonymous chat transfer
     const pendingTransferRaw = sessionStorage.getItem('bottarot_pending_transfer');
-    if (pendingTransferRaw && auth.isLoggedIn) {
+    if (pendingTransferRaw) {
+        isTransferring.value = true;
         try {
-            const transfer = JSON.parse(pendingTransferRaw);
-            sessionStorage.removeItem('bottarot_pending_transfer');
+            // Wait for auth to fully initialize (Supabase session restore is async)
+            await waitForAuth();
 
-            // Only process if within 5 minute window
-            if (Date.now() - transfer.timestamp < 300000) {
-                console.log('Post-OAuth: Transferring anonymous chat', transfer.chatId);
-                const success = await transferAnonymousChat(
-                    transfer.chatId,
-                    auth.user.id,
-                    transfer.messages || []
-                );
+            if (auth.isLoggedIn) {
+                const transfer = JSON.parse(pendingTransferRaw);
+                sessionStorage.removeItem('bottarot_pending_transfer');
 
-                if (success) {
-                    // Reload permissions (new user gets 5 free futures)
-                    await auth.loadReadingPermissions();
+                // Only process if within 5 minute window
+                if (Date.now() - transfer.timestamp < 300000) {
+                    console.log('Post-OAuth: Transferring anonymous chat', transfer.chatId);
+                    const success = await transferAnonymousChat(
+                        transfer.chatId,
+                        auth.user.id,
+                        transfer.messages || []
+                    );
 
-                    // Record reading with future revealed
-                    await auth.recordReading(true);
+                    if (success) {
+                        // Reload permissions (new user gets 5 free futures)
+                        await auth.loadReadingPermissions();
 
-                    // Reload chat history from DB — now with full sections
-                    await loadChatHistory(transfer.chatId);
+                        // Record reading with future revealed
+                        await auth.recordReading(true);
 
-                    // Refresh chat list in sidebar
-                    chatStore.fetchChatList(auth.user.id);
+                        // Reload chat history from DB — now with full sections
+                        await loadChatHistory(transfer.chatId);
+
+                        // Refresh chat list in sidebar
+                        chatStore.fetchChatList(auth.user.id);
+                    }
+                } else {
+                    // Expired — clean up and load normally
+                    sessionStorage.removeItem('bottarot_pending_transfer');
+                    loadChatHistory(route.params.chatId);
                 }
+            } else {
+                // Not logged in (user cancelled OAuth?) — load chat normally
+                console.log('Post-OAuth: User not logged in, loading chat normally');
+                loadChatHistory(route.params.chatId);
             }
         } catch (e) {
             console.error('Post-OAuth transfer error:', e);
             sessionStorage.removeItem('bottarot_pending_transfer');
+            loadChatHistory(route.params.chatId);
+        } finally {
+            isTransferring.value = false;
         }
     }
 });
 
 watch(() => route.params.chatId, (newChatId) => {
     if (newChatId && typeof newChatId === 'string') {
+        // Skip history load if a post-OAuth transfer is pending — onMounted handles it
+        if (isTransferring.value || sessionStorage.getItem('bottarot_pending_transfer')) {
+            console.log('Skipping history load — pending transfer detected');
+            return;
+        }
         loadChatHistory(newChatId);
     }
 }, { immediate: true });
