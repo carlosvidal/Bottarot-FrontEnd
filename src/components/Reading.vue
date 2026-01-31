@@ -312,9 +312,8 @@ const playAudio = async () => {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.5s ease, transform 0.5s ease;
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
     align-items: stretch;
 }
 
