@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import { marked } from 'marked';
 import { useI18n } from 'vue-i18n';
 import { useAnalytics } from '../composables/useAnalytics.js';
@@ -39,11 +39,42 @@ const props = defineProps({
     readingId: {
         type: String,
         default: null
+    },
+    animateEntrance: {
+        type: Boolean,
+        default: false
     }
 });
 
 // Emits for CTA actions
 const emit = defineEmits(['unlock-future', 'register']);
+
+const sectionOrder = ['saludo', 'pasado', 'presente', 'futuro', 'sintesis', 'consejo'];
+
+// Staggered entrance animation for sections
+const visibleSectionCount = ref(0);
+let entranceTimer = null;
+
+watch(() => props.animateEntrance, (shouldAnimate) => {
+    if (shouldAnimate && props.sections) {
+        visibleSectionCount.value = 0;
+        const totalSections = sectionOrder.filter(k => props.sections[k]).length;
+        let count = 0;
+        entranceTimer = setInterval(() => {
+            count++;
+            visibleSectionCount.value = count;
+            if (count >= totalSections) {
+                clearInterval(entranceTimer);
+            }
+        }, 600);
+    } else {
+        visibleSectionCount.value = 999; // Show all immediately
+    }
+}, { immediate: true });
+
+onUnmounted(() => {
+    if (entranceTimer) clearInterval(entranceTimer);
+});
 
 // Check if a card is the future card (index 2)
 const isFutureCard = (index) => index === 2;
@@ -81,8 +112,6 @@ const formattedInterpretation = computed(() => {
 
 // Section-based rendering (v2)
 const hasSections = computed(() => props.sections && Object.keys(props.sections).length > 0);
-
-const sectionOrder = ['saludo', 'pasado', 'presente', 'futuro', 'sintesis', 'consejo'];
 
 const sectionLabels = computed(() => ({
     saludo: '',
@@ -240,10 +269,10 @@ const playAudio = async () => {
                     </button>
                 </div>
                 <div
-                    v-for="section in visibleSections"
+                    v-for="(section, sIdx) in visibleSections"
                     :key="section.key"
                     class="interpretation-bubble"
-                    :class="[`bubble-${section.key}`, { 'bubble-teaser': section.isTeaser }]"
+                    :class="[`bubble-${section.key}`, { 'bubble-teaser': section.isTeaser, 'bubble-entering': animateEntrance && sIdx < visibleSectionCount, 'bubble-hidden': animateEntrance && sIdx >= visibleSectionCount }]"
                 >
                     <div v-if="sectionLabels[section.key]" class="bubble-label">
                         {{ sectionLabels[section.key] }}
@@ -423,6 +452,28 @@ const playAudio = async () => {
     position: relative;
     overflow: hidden;
     animation: fadeInBubble 0.5s ease-out forwards;
+}
+
+/* Staggered entrance animation */
+.interpretation-bubble.bubble-hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: none;
+}
+
+.interpretation-bubble.bubble-entering {
+    animation: slideInBubble 0.5s ease-out forwards;
+}
+
+@keyframes slideInBubble {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .bubble-label {

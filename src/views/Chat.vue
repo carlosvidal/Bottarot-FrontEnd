@@ -43,9 +43,10 @@ const { trackTarotReadingStart, trackTarotReadingComplete, trackTarotCardsReveal
 // 2. Function Declarations
 const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
 
-const loadChatHistory = async (chatId) => {
+const loadChatHistory = async (chatId, options = {}) => {
     // No cargar historial si es un chat nuevo o no hay usuario
     if (!chatId || chatId === 'new' || !auth.user?.id) { readings.value = []; return; }
+    const { animateEntrance = false } = options;
     isLoadingHistory.value = true;
     readings.value = [];
     try {
@@ -115,7 +116,8 @@ const loadChatHistory = async (chatId) => {
                     timestamp: msg.created_at,
                     futureHidden: msgFutureHidden,
                     ctaMessage: msgFutureHidden ? (auth.isAnonymousUser ? 'Para revelar tu futuro, reclama tu identidad espiritual' : 'Desbloquea tu futuro completo con un plan premium') : null,
-                    isAnonymous: auth.isAnonymousUser
+                    isAnonymous: auth.isAnonymousUser,
+                    animateEntrance: animateEntrance
                 });
                 lastUserQuestion = '';
             }
@@ -287,6 +289,7 @@ const animateCards = async (cardsArray, messageRef) => {
 
 const handleQuestionSubmitted = async (question) => {
     console.log('🚀 handleQuestionSubmitted called with question:', question);
+    isLiveSession.value = true; // Enable auto-scroll for live conversation
     const chatId = route.params.chatId;
     const userId = auth.user?.id;
     isAnonymousSession.value = !userId;
@@ -622,7 +625,7 @@ onMounted(async () => {
                         await auth.recordReading(true);
 
                         // Reload chat history from DB — now with full sections
-                        await loadChatHistory(transfer.chatId);
+                        await loadChatHistory(transfer.chatId, { animateEntrance: true });
 
                         // Refresh chat list in sidebar
                         chatStore.fetchChatList(auth.user.id);
@@ -658,7 +661,11 @@ watch(() => route.params.chatId, (newChatId) => {
     }
 }, { immediate: true });
 
-watch(readings, scrollToBottom, { deep: true });
+// Only auto-scroll during live conversation, not when loading history
+const isLiveSession = ref(false);
+watch(readings, () => {
+    if (isLiveSession.value) scrollToBottom();
+}, { deep: true });
 </script>
 
 <template>
@@ -677,7 +684,11 @@ watch(readings, scrollToBottom, { deep: true });
                 </template>
             </ChatHeader>
             <main class="chat-container" ref="chatHistory">
-                <div v-if="isLoadingHistory">Cargando historial...</div>
+                <div v-if="isTransferring || isLoadingHistory" class="loading-history">
+                    <div class="loading-spinner"></div>
+                    <p v-if="isTransferring">Preparando tu lectura...</p>
+                    <p v-else>Cargando historial...</p>
+                </div>
                 <div v-else-if="readings.length === 0 && !isLoading" class="welcome-message">
                     <h2>{{ personalizedGreeting }}</h2>
                     <p>Formula tu pregunta para que el oráculo te muestre tu destino.</p>
@@ -695,6 +706,7 @@ watch(readings, scrollToBottom, { deep: true });
                             :ctaMessage="item.ctaMessage"
                             :isAnonymous="item.isAnonymous || false"
                             :readingId="item.id"
+                            :animateEntrance="item.animateEntrance || false"
                             @register="handleRegisterCta"
                             @unlock-future="handleUnlockFutureCta"
                         />
@@ -748,6 +760,38 @@ watch(readings, scrollToBottom, { deep: true });
 .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; width: 100%; }
 .chat-container { flex-grow: 1; overflow-y: auto; padding: 15px; background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary)); }
 .readings-list { max-width: 900px; margin: 0 auto; }
+
+/* Loading animation for history/transfer */
+.loading-history {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.loading-history p {
+    margin-top: 16px;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--color-accent-text);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 215, 0, 0.2);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .welcome-message { text-align: center; padding: 20px; }
 .welcome-message h2 { font-size: 1.8rem; color: var(--color-accent-text); margin-bottom: 15px; }
 .welcome-message p { font-size: 1rem; max-width: 500px; margin: 0 auto; line-height: 1.6; }
