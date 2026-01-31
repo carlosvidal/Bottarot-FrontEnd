@@ -16,7 +16,7 @@
     "less": "Meno"
   },
   "nav": {
-    "newChat": "Nuova Chat",
+    "newChat": "Nuova Lettura",
     "profile": "Vedi Profilo",
     "logout": "Esci",
     "upgradeToPremium": "Passa a Premium",
@@ -25,7 +25,7 @@
     "cookies": "Cookie"
   },
   "sidebar": {
-    "newChat": "Nuova Chat",
+    "newChat": "Nuova Lettura",
     "history": "Cronologia",
     "chatsThisWeek": "{count} chat rimanente questa settimana | {count} chat rimanenti questa settimana",
     "weeklyLimitReached": "Limite settimanale raggiunto",

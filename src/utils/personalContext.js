@@ -33,16 +33,29 @@ const getUserProfile = async () => {
   }
 }
 
+// Parse date-of-birth string safely (avoids UTC-to-local timezone shift)
+// Input: "YYYY-MM-DD" → returns { year, month (1-12), day }
+const parseDateOfBirth = (dateOfBirth) => {
+  if (!dateOfBirth) return null
+  const parts = String(dateOfBirth).split('T')[0].split('-')
+  if (parts.length < 3) return null
+  return {
+    year: parseInt(parts[0], 10),
+    month: parseInt(parts[1], 10),  // 1-12
+    day: parseInt(parts[2], 10)
+  }
+}
+
 // Calcular edad basada en fecha de nacimiento
 const calculateAge = (dateOfBirth) => {
-  if (!dateOfBirth) return null
+  const dob = parseDateOfBirth(dateOfBirth)
+  if (!dob) return null
 
   const today = new Date()
-  const birthDate = new Date(dateOfBirth)
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDiff = today.getMonth() - birthDate.getMonth()
+  let age = today.getFullYear() - dob.year
+  const monthDiff = (today.getMonth() + 1) - dob.month
 
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.day)) {
     age--
   }
 
@@ -51,11 +64,11 @@ const calculateAge = (dateOfBirth) => {
 
 // Calcular signo zodiacal basado en fecha de nacimiento
 const getZodiacSign = (dateOfBirth) => {
-  if (!dateOfBirth) return null
+  const dob = parseDateOfBirth(dateOfBirth)
+  if (!dob) return null
 
-  const date = new Date(dateOfBirth)
-  const month = date.getMonth() + 1 // 1-12
-  const day = date.getDate()
+  const month = dob.month // 1-12
+  const day = dob.day
 
   // Zodiac date ranges
   const zodiacSigns = [
@@ -236,9 +249,10 @@ const getSpecialDates = (dateOfBirth, timezone = 'America/Mexico_City') => {
 
   // Cumpleaños
   if (dateOfBirth) {
-    const birthDate = new Date(dateOfBirth)
-    const thisYearBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate())
-    const nextYearBirthday = new Date(currentYear + 1, birthDate.getMonth(), birthDate.getDate())
+    const dob = parseDateOfBirth(dateOfBirth)
+    if (dob) {
+    const thisYearBirthday = new Date(currentYear, dob.month - 1, dob.day)
+    const nextYearBirthday = new Date(currentYear + 1, dob.month - 1, dob.day)
 
     const daysUntilBirthday = Math.ceil((thisYearBirthday - userTime) / (1000 * 60 * 60 * 24))
     const daysUntilNextYearBirthday = Math.ceil((nextYearBirthday - userTime) / (1000 * 60 * 60 * 24))
@@ -249,6 +263,7 @@ const getSpecialDates = (dateOfBirth, timezone = 'America/Mexico_City') => {
       specialDates.push(`Tu cumpleaños está muy cerca (en ${daysUntilBirthday} días)`)
     } else if (daysUntilBirthday < 0 && daysUntilNextYearBirthday <= 7) {
       specialDates.push(`Tu cumpleaños está muy cerca (en ${daysUntilNextYearBirthday} días)`)
+    }
     }
   }
 

@@ -103,7 +103,7 @@ watch(() => props.interpretation, (newInterpretation) => {
 }, { immediate: true });
 
 const cardBackImg = '/img/sm_RWSa-X-BA.webp';
-const cardTitles = computed(() => [t('cards.past'), t('cards.present'), t('cards.future')]);
+
 
 const formattedInterpretation = computed(() => {
     if (!props.interpretation) return '';
@@ -239,18 +239,6 @@ const playAudio = async () => {
                         </div>
                     </div>
                 </div>
-                <div v-if="card.isFlipped && !(futureHidden && isFutureCard(index))" class="card-info">
-                    <h4 class="card-position-title">{{ cardTitles[index] }}</h4>
-                    <h3 class="card-name">{{ card.name }} <span v-if="!card.upright"
-                            class="card-orientation card-orientation_invertida">({{ t('cards.inverted') }})</span></h3>
-                    <p class="card-description">{{ card.description }}</p>
-                </div>
-                <!-- Hidden future card info placeholder -->
-                <div v-if="card.isFlipped && futureHidden && isFutureCard(index)" class="card-info card-info--hidden">
-                    <h4 class="card-position-title">{{ cardTitles[index] }}</h4>
-                    <h3 class="card-name">??? <span class="card-orientation card-orientation_oculta">({{ t('cards.hidden') }})</span></h3>
-                    <p class="card-description">{{ t('cards.futureHidden') }}</p>
-                </div>
             </div>
         </div>
 
@@ -335,17 +323,6 @@ const playAudio = async () => {
     transform: translateY(0);
 }
 
-.card-position-title {
-    color: var(--color-accent-text);
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin-bottom: 10px;
-    text-shadow: 1px 1px 3px var(--shadow-sm);
-    opacity: 0;
-    animation: fadeInTitle 1s ease-out 0.2s forwards;
-}
-
 .card-visual-wrapper { position: relative; width: 100%; padding-top: 170%; border-radius: 12px; }
 .card-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); transform-style: preserve-3d; }
 .card-inner.is-flipped { transform: rotateY(180deg); }
@@ -353,33 +330,6 @@ const playAudio = async () => {
 .card-face--front { transform: rotateY(180deg); }
 .card-image { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
 .card-image.is-inverted { transform: rotate(180deg); }
-
-@keyframes fadeInTitle {
-    from { opacity: 0; transform: translateY(-15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeInAfterFlip {
-    0%, 60% { opacity: 0; transform: translateY(-15px); }
-    100% { opacity: 1; transform: translateY(0); }
-}
-
-.card-info {
-    background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
-    border: none;
-    border-radius: 12px;
-    padding: 15px;
-    opacity: 0;
-    animation: fadeInAfterFlip 1.3s ease-out forwards;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.card-name { font-size: 1rem; font-weight: 600; color: var(--color-accent-text); margin-bottom: 8px; text-align: center; line-height: 1.3; }
-.card-orientation { display: block; margin-top: 4px; }
-.card-orientation.card-orientation_invertida { color: var(--color-error); font-size: 0.85rem; font-weight: normal; font-style: italic; }
-.card-description { font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); text-align: center; }
 
 .interpretation-loading, .interpretation-error {
     text-align: center;
@@ -400,7 +350,7 @@ const playAudio = async () => {
 
 .interpretation-header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     margin-bottom: 10px;
 }
 
@@ -605,18 +555,6 @@ const playAudio = async () => {
     background: linear-gradient(45deg, var(--btn-primary-hover), var(--btn-primary-hover));
 }
 
-.card-info--hidden {
-    background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
-    border: 1px dashed var(--accent-dim);
-}
-
-.card-orientation.card-orientation_oculta {
-    color: var(--text-tertiary);
-    font-size: 0.85rem;
-    font-weight: normal;
-    font-style: italic;
-}
-
 /* Tablet and Desktop styles */
 @media (min-width: 768px) {
     .cards-container {
@@ -626,18 +564,8 @@ const playAudio = async () => {
         align-items: start;
     }
 
-    .card {
-        display: grid;
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-        gap: 0;
-        align-items: stretch;
-        height: 100%;
-    }
-
     .card-visual-wrapper {
         border-radius: 15px;
-        margin-bottom: 16px;
     }
 
     .card-inner {
@@ -646,41 +574,6 @@ const playAudio = async () => {
 
     .card-face {
         border-radius: 15px;
-    }
-
-    .card-position-title {
-        text-align: center;
-        font-size: 1.4rem;
-        margin-bottom: 15px;
-    }
-
-    .card-info {
-        border-radius: 15px;
-        padding: 20px;
-    }
-
-    .card-name {
-        font-size: 1.2rem;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-
-    .card-orientation {
-        margin-top: 6px;
-    }
-
-    .card-orientation.card-orientation_invertida {
-        font-size: 1rem;
-    }
-
-    .card-orientation.card-orientation_oculta {
-        font-size: 1rem;
-    }
-
-    .card-description {
-        font-size: 0.9rem;
-        line-height: 1.6;
-        text-align: center;
     }
 }
 </style>
