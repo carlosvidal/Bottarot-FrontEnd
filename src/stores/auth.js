@@ -266,13 +266,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Login with Google
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (customRedirectTo = null) => {
     loading.value = true
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: customRedirectTo || window.location.origin
         }
       })
       if (error) throw error
@@ -286,13 +286,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Login with Facebook
-  const loginWithFacebook = async () => {
+  const loginWithFacebook = async (customRedirectTo = null) => {
     loading.value = true
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: customRedirectTo || window.location.origin
         }
       })
       if (error) throw error

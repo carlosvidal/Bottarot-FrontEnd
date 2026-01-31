@@ -1,11 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { marked } from 'marked';
 import { useI18n } from 'vue-i18n';
 import { useAnalytics } from '../composables/useAnalytics.js';
 
-const router = useRouter();
 const { t } = useI18n();
 const { trackTarotTTSPlay } = useAnalytics();
 
@@ -37,6 +35,10 @@ const props = defineProps({
     isAnonymous: {
         type: Boolean,
         default: false
+    },
+    readingId: {
+        type: String,
+        default: null
     }
 });
 
@@ -46,14 +48,12 @@ const emit = defineEmits(['unlock-future', 'register']);
 // Check if a card is the future card (index 2)
 const isFutureCard = (index) => index === 2;
 
-// Handle CTA click
+// Handle CTA click — emit only, parent handles navigation/modals
 const handleCtaClick = () => {
     if (props.isAnonymous) {
-        emit('register');
-        router.push('/landing');
+        emit('register', props.readingId);
     } else {
-        emit('unlock-future');
-        router.push('/checkout');
+        emit('unlock-future', props.readingId);
     }
 };
 

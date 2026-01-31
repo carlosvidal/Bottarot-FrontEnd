@@ -5,86 +5,47 @@ import { useI18n } from 'vue-i18n'
 import { useAnalytics } from '../composables/useAnalytics.js'
 
 const { t } = useI18n()
-const { trackSignUp, trackLogin } = useAnalytics()
+const { trackLogin } = useAnalytics()
 
 const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false
+  },
+  redirectTo: {
+    type: String,
+    default: null
   }
 })
 
 const emit = defineEmits(['close'])
 
 const authStore = useAuthStore()
-const isLoginMode = ref(true)
-const email = ref('')
-const password = ref('')
 const error = ref('')
-
-const toggleMode = () => {
-  isLoginMode.value = !isLoginMode.value
-  error.value = ''
-  email.value = ''
-  password.value = ''
-}
 
 const handleGoogleLogin = async () => {
   error.value = ''
-  const { error: authError } = await authStore.loginWithGoogle()
+  const { error: authError } = await authStore.loginWithGoogle(props.redirectTo)
   if (authError) {
     error.value = authError.message
   } else {
-    // Track successful Google login (works as both signup and login)
     trackLogin('google')
   }
 }
 
 const handleFacebookLogin = async () => {
   error.value = ''
-  const { error: authError } = await authStore.loginWithFacebook()
+  const { error: authError } = await authStore.loginWithFacebook(props.redirectTo)
   if (authError) {
     error.value = authError.message
   } else {
-    // Track successful Facebook login (works as both signup and login)
     trackLogin('facebook')
-  }
-}
-
-const handleEmailAuth = async () => {
-  error.value = ''
-
-  if (!email.value || !password.value) {
-    error.value = t('auth.completeAllFields')
-    return
-  }
-
-  let result
-  if (isLoginMode.value) {
-    result = await authStore.loginWithEmail(email.value, password.value)
-  } else {
-    result = await authStore.signUpWithEmail(email.value, password.value)
-  }
-
-  if (result.error) {
-    error.value = result.error.message
-  } else {
-    // Track successful authentication
-    if (isLoginMode.value) {
-      trackLogin('email')
-      emit('close')
-    } else {
-      trackSignUp('email')
-      error.value = t('auth.checkEmailConfirm')
-    }
   }
 }
 
 const closeModal = () => {
   emit('close')
   error.value = ''
-  email.value = ''
-  password.value = ''
 }
 </script>
 
@@ -92,7 +53,7 @@ const closeModal = () => {
   <div v-if="isOpen" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>{{ isLoginMode ? t('auth.login') : t('auth.signup') }}</h2>
+        <h2>{{ t('auth.signup') }}</h2>
         <button @click="closeModal" class="close-btn">&times;</button>
       </div>
 
@@ -119,49 +80,6 @@ const closeModal = () => {
             </svg>
             {{ t('auth.continueWithFacebook') }}
           </button>
-        </div>
-
-        <div class="divider">
-          <span>{{ t('auth.or') }}</span>
-        </div>
-
-        <!-- Email/Password Form -->
-        <form @submit.prevent="handleEmailAuth" class="auth-form">
-          <div class="form-group">
-            <label for="email">{{ t('auth.email') }}</label>
-            <input
-              id="email"
-              v-model="email"
-              type="email"
-              required
-              :placeholder="t('auth.emailPlaceholder')"
-            >
-          </div>
-
-          <div class="form-group">
-            <label for="password">{{ t('auth.password') }}</label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              required
-              :placeholder="isLoginMode ? t('auth.passwordPlaceholder') : t('auth.passwordMin')"
-              minlength="6"
-            >
-          </div>
-
-          <button type="submit" class="submit-btn" :disabled="authStore.loading">
-            {{ authStore.loading ? t('common.loading') : (isLoginMode ? t('auth.login') : t('auth.signup')) }}
-          </button>
-        </form>
-
-        <div class="toggle-mode">
-          <p>
-            {{ isLoginMode ? t('auth.noAccount') : t('auth.hasAccount') }}
-            <button @click="toggleMode" class="toggle-btn">
-              {{ isLoginMode ? t('auth.createAccount') : t('auth.loginLink') }}
-            </button>
-          </p>
         </div>
       </div>
     </div>
@@ -281,111 +199,6 @@ const closeModal = () => {
 
 .facebook-btn:hover:not(:disabled) {
   border-color: #1877F2;
-}
-
-.divider {
-  text-align: center;
-  margin: 25px 0;
-  position: relative;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--border-primary);
-}
-
-.divider span {
-  background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
-  padding: 0 15px;
-  color: var(--text-tertiary);
-  font-size: 0.9rem;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group label {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.form-group input {
-  padding: 12px 16px;
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-white);
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--color-accent-text);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.submit-btn {
-  padding: 14px;
-  background: linear-gradient(145deg, var(--color-accent), var(--color-accent-light));
-  color: var(--bg-elevated);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: linear-gradient(145deg, var(--color-accent-light), var(--color-accent));
-  transform: translateY(-1px);
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.toggle-mode {
-  text-align: center;
-  margin-top: 25px;
-}
-
-.toggle-mode p {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.toggle-btn {
-  background: none;
-  border: none;
-  color: var(--color-accent-text);
-  cursor: pointer;
-  font-size: 0.9rem;
-  text-decoration: underline;
-  transition: color 0.3s ease;
-}
-
-.toggle-btn:hover {
-  color: var(--color-accent-light);
 }
 
 @media (max-width: 480px) {

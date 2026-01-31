@@ -13,6 +13,8 @@ import Sidebar from '../components/Sidebar.vue';
 import ChatHeader from '../components/ChatHeader.vue';
 import QuestionForm from '../components/QuestionForm.vue';
 import DailyLimitModal from '../components/DailyLimitModal.vue';
+import AuthModal from '../components/AuthModal.vue';
+import CheckoutModal from '../components/CheckoutModal.vue';
 
 // 1. Core State and Store Initialization
 const readings = ref([]);
@@ -25,6 +27,11 @@ const showDailyLimitModal = ref(false);
 const currentFutureHidden = ref(false);
 const currentCtaMessage = ref(null);
 const isAnonymousSession = ref(false);
+
+// Modal state for in-chat auth/checkout
+const showAuthModal = ref(false);
+const showCheckoutModal = ref(false);
+const pendingRevealReadingId = ref(null);
 
 const route = useRoute();
 const router = useRouter();
@@ -121,6 +128,114 @@ const loadChatHistory = async (chatId) => {
 };
 
 const createNewChat = () => router.push({ name: 'new-chat' });
+
+// Compute the OAuth redirect URL to return to this exact chat
+const chatRedirectUrl = computed(() => {
+    const chatId = route.params.chatId;
+    return chatId ? `${window.location.origin}/chat/${chatId}` : window.location.origin;
+});
+
+// CTA handlers — open modals instead of navigating away
+const handleRegisterCta = (readingId) => {
+    pendingRevealReadingId.value = readingId;
+    // Save transfer info for post-OAuth return
+    const chatId = route.params.chatId;
+    sessionStorage.setItem('bottarot_pending_transfer', JSON.stringify({
+        chatId,
+        readingItemId: readingId,
+        messages: buildMessagesForTransfer(),
+        timestamp: Date.now()
+    }));
+    showAuthModal.value = true;
+};
+
+const handleUnlockFutureCta = (readingId) => {
+    pendingRevealReadingId.value = readingId;
+    showCheckoutModal.value = true;
+};
+
+// Build messages array from in-memory readings for transfer
+const buildMessagesForTransfer = () => {
+    return readings.value.map(r => {
+        if (r.role === 'user') {
+            return { role: 'user', content: r.content, cards: null };
+        }
+        // Assistant message — build structured content
+        const hasSections = r.sections && Object.keys(r.sections).length > 0;
+        const contentToSave = hasSections
+            ? JSON.stringify({
+                _version: 2,
+                sections: Object.fromEntries(
+                    Object.entries(r.sections).map(([k, v]) => [k, v.text || v])
+                ),
+                rawText: r.interpretation || ''
+            })
+            : r.interpretation || r.content;
+
+        return { role: 'assistant', content: contentToSave, cards: r.drawnCards || null };
+    });
+};
+
+// Transfer anonymous chat to authenticated user via backend
+const transferAnonymousChat = async (chatId, newUserId, messages) => {
+    const API_URL = import.meta.env.VITE_API_URL;
+    try {
+        const response = await fetch(`${API_URL}/api/chat/transfer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, newUserId, messages })
+        });
+        if (!response.ok) {
+            console.error('Transfer failed:', await response.text());
+            return false;
+        }
+        console.log('Chat transferred successfully');
+        return true;
+    } catch (err) {
+        console.error('Transfer error:', err);
+        return false;
+    }
+};
+
+// Reveal future in-place after payment success
+const revealFutureInPlace = async (readingId) => {
+    const reading = readings.value.find(r => r.id === readingId);
+    if (!reading) return;
+
+    const API_URL = import.meta.env.VITE_API_URL;
+    const chatId = route.params.chatId;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/api/chat/message/${chatId}/${readingId}/full-sections?userId=${auth.user.id}`
+        );
+        if (response.ok) {
+            const data = await response.json();
+            if (data.sections) {
+                reading.sections = data.sections;
+                reading.futureHidden = false;
+                reading.ctaMessage = null;
+                // Reveal future card visually
+                if (reading.drawnCards?.[2]) {
+                    reading.drawnCards[2].isFlipped = true;
+                    reading.drawnCards = [...reading.drawnCards];
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Error revealing future in-place:', err);
+    }
+};
+
+// Handle checkout modal success
+const handleCheckoutSuccess = async () => {
+    showCheckoutModal.value = false;
+    // Permissions already reloaded inside CheckoutModal
+    if (pendingRevealReadingId.value) {
+        await revealFutureInPlace(pendingRevealReadingId.value);
+        pendingRevealReadingId.value = null;
+    }
+};
 
 const ensureChatExistsInDb = async (chatId, userId, initialQuestion) => {
     try {
@@ -462,6 +577,42 @@ onMounted(async () => {
     } catch (e) {
         console.warn('Could not load personalized greeting.');
     }
+
+    // Post-OAuth transfer: check if we have a pending anonymous chat transfer
+    const pendingTransferRaw = sessionStorage.getItem('bottarot_pending_transfer');
+    if (pendingTransferRaw && auth.isLoggedIn) {
+        try {
+            const transfer = JSON.parse(pendingTransferRaw);
+            sessionStorage.removeItem('bottarot_pending_transfer');
+
+            // Only process if within 5 minute window
+            if (Date.now() - transfer.timestamp < 300000) {
+                console.log('Post-OAuth: Transferring anonymous chat', transfer.chatId);
+                const success = await transferAnonymousChat(
+                    transfer.chatId,
+                    auth.user.id,
+                    transfer.messages || []
+                );
+
+                if (success) {
+                    // Reload permissions (new user gets 5 free futures)
+                    await auth.loadReadingPermissions();
+
+                    // Record reading with future revealed
+                    await auth.recordReading(true);
+
+                    // Reload chat history from DB — now with full sections
+                    await loadChatHistory(transfer.chatId);
+
+                    // Refresh chat list in sidebar
+                    chatStore.fetchChatList(auth.user.id);
+                }
+            }
+        } catch (e) {
+            console.error('Post-OAuth transfer error:', e);
+            sessionStorage.removeItem('bottarot_pending_transfer');
+        }
+    }
 });
 
 watch(() => route.params.chatId, (newChatId) => {
@@ -506,6 +657,9 @@ watch(readings, scrollToBottom, { deep: true });
                             :futureHidden="item.futureHidden || false"
                             :ctaMessage="item.ctaMessage"
                             :isAnonymous="item.isAnonymous || false"
+                            :readingId="item.id"
+                            @register="handleRegisterCta"
+                            @unlock-future="handleUnlockFutureCta"
                         />
                     </template>
                 </div>
@@ -520,7 +674,21 @@ watch(readings, scrollToBottom, { deep: true });
         <DailyLimitModal
             v-if="showDailyLimitModal"
             @close="showDailyLimitModal = false"
-            @view-plans="router.push('/checkout'); showDailyLimitModal = false"
+            @view-plans="showDailyLimitModal = false; showCheckoutModal = true"
+        />
+
+        <!-- Auth Modal (for anonymous users) -->
+        <AuthModal
+            :isOpen="showAuthModal"
+            :redirectTo="chatRedirectUrl"
+            @close="showAuthModal = false"
+        />
+
+        <!-- Checkout Modal (for free users without futures) -->
+        <CheckoutModal
+            v-if="showCheckoutModal"
+            @close="showCheckoutModal = false"
+            @payment-success="handleCheckoutSuccess"
         />
     </div>
 </template>
