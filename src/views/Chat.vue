@@ -64,8 +64,7 @@ const loadChatHistory = async (chatId, options = {}) => {
                 if (msg.cards && msg.cards.length > 0) {
                     processedCards = msg.cards.map(card => ({
                         ...card,
-                        revealed: true,
-                        isFlipped: true
+                        revealed: true
                     }));
                 }
 
@@ -220,7 +219,7 @@ const revealFutureInPlace = async (readingId) => {
                 reading.ctaMessage = null;
                 // Reveal future card visually
                 if (reading.drawnCards?.[2]) {
-                    reading.drawnCards[2].isFlipped = true;
+                    reading.drawnCards[2].revealed = true;
                     reading.drawnCards = [...reading.drawnCards];
                 }
             }
@@ -259,30 +258,21 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const prepareCardsForAnimation = (cards) => {
     if (!cards || cards.length === 0) return cards;
-    // Preparar cartas para animación
     return cards.map(card => ({
         ...card,
-        revealed: false,
-        isFlipped: false
+        revealed: false
     }));
 };
 
 const animateCards = async (cardsArray, messageRef) => {
     if (!cardsArray || cardsArray.length === 0) return;
 
-    // Revelar cartas secuencialmente
+    // Revelar cartas secuencialmente con stagger
     for (let i = 0; i < cardsArray.length; i++) {
-        await delay(600);
-        // Actualizar directamente la referencia del mensaje para forzar reactividad
+        await delay(500);
         cardsArray[i].revealed = true;
         if (messageRef) {
-            messageRef.drawnCards = [...cardsArray]; // Forzar actualización
-        }
-
-        await delay(200);
-        cardsArray[i].isFlipped = true;
-        if (messageRef) {
-            messageRef.drawnCards = [...cardsArray]; // Forzar actualización
+            messageRef.drawnCards = [...cardsArray];
         }
     }
 };

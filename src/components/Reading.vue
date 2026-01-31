@@ -89,20 +89,16 @@ const handleCtaClick = () => {
 };
 
 // Debug logging
-watch(() => props.cards, (newCards) => {
-    console.log('📋 Reading component received cards:', newCards);
-    if (newCards && newCards.length > 0) {
-        newCards.forEach((card, index) => {
-            console.log(`  Card ${index}:`, card.name, `revealed: ${card.revealed}, isFlipped: ${card.isFlipped}`);
-        });
-    }
-}, { immediate: true, deep: true});
-
-watch(() => props.interpretation, (newInterpretation) => {
-    console.log('📝 Reading component received interpretation:', newInterpretation ? 'Yes (' + newInterpretation.length + ' chars)' : 'No');
-}, { immediate: true });
-
-const cardBackImg = '/img/sm_RWSa-X-BA.webp';
+// Subtle rotations: left/right cards tilt one way, center card tilts opposite
+const cardRotations = computed(() => {
+    if (!props.cards || props.cards.length === 0) return [];
+    const presets = [
+        { rotation: -1.8, offsetY: -1 },  // Left card: slight counter-clockwise
+        { rotation: 1.2, offsetY: 1 },     // Center card: opposite direction
+        { rotation: -0.9, offsetY: -1 },   // Right card: subtle counter-clockwise
+    ];
+    return props.cards.map((_, index) => presets[index] || { rotation: 0, offsetY: 0 });
+});
 
 
 const formattedInterpretation = computed(() => {
@@ -217,19 +213,13 @@ const playAudio = async () => {
     <div>
         <div v-if="cards && cards.length > 0" class="cards-container">
             <div v-for="(card, index) in cards" :key="card.name" class="card"
-                :class="{ 'is-visible': card.revealed, 'future-hidden': futureHidden && isFutureCard(index) }">
+                :class="{ 'is-visible': card.revealed, 'future-hidden': futureHidden && isFutureCard(index) }"
+                :style="card.revealed && cardRotations[index] ? { '--card-rotation': cardRotations[index].rotation + 'deg', '--card-offset-y': cardRotations[index].offsetY + 'px' } : {}">
                 <div class="card-visual-wrapper">
-                    <div class="card-inner" :class="{ 'is-flipped': card.isFlipped && !(futureHidden && isFutureCard(index)) }">
-                        <div class="card-face card-face--back">
-                            <img :src="cardBackImg" alt="Card Back" class="card-image">
-                        </div>
-                        <div class="card-face card-face--front">
-                            <img :src="card.image || ''" :alt="card.name" class="card-image"
-                                :class="{ 'is-inverted': !card.upright }">
-                        </div>
-                    </div>
+                    <img :src="card.image || ''" :alt="card.name" class="card-image"
+                        :class="{ 'is-inverted': !card.upright }">
                     <!-- Mystical overlay for hidden future -->
-                    <div v-if="futureHidden && isFutureCard(index) && card.isFlipped" class="future-overlay">
+                    <div v-if="futureHidden && isFutureCard(index) && card.revealed" class="future-overlay">
                         <div class="future-overlay-content">
                             <div class="mystical-symbol">🔮</div>
                             <p class="overlay-text">{{ ctaMessage || t('cards.futureAwaits') }}</p>
@@ -301,17 +291,18 @@ const playAudio = async () => {
 <style scoped>
 /* Mobile-first styles */
 .cards-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    perspective: 1000px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     margin-bottom: 20px;
 }
 
 .card {
+    --card-rotation: 0deg;
+    --card-offset-y: 0px;
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(30px) rotate(0deg);
+    transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -319,15 +310,24 @@ const playAudio = async () => {
 
 .card.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(var(--card-offset-y)) rotate(var(--card-rotation));
 }
 
-.card-visual-wrapper { position: relative; width: 100%; padding-top: 170%; border-radius: 12px; }
-.card-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); transform-style: preserve-3d; }
-.card-inner.is-flipped { transform: rotateY(180deg); }
-.card-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--bg-elevated); border-radius: 12px; overflow: hidden; background-color: var(--color-white); }
-.card-face--front { transform: rotateY(180deg); }
-.card-image { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
+.card.is-visible:hover {
+    transform: translateY(calc(var(--card-offset-y) - 4px)) rotate(0deg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.card-visual-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 170%;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: var(--color-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.card-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .card-image.is-inverted { transform: rotate(180deg); }
 
 .interpretation-loading, .interpretation-error {
@@ -557,21 +557,10 @@ const playAudio = async () => {
 /* Tablet and Desktop styles */
 @media (min-width: 768px) {
     .cards-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 30px;
-        align-items: start;
+        gap: 24px;
     }
 
     .card-visual-wrapper {
-        border-radius: 15px;
-    }
-
-    .card-inner {
-        border-radius: 15px;
-    }
-
-    .card-face {
         border-radius: 15px;
     }
 }
