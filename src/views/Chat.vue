@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chats';
 import { supabase } from '../lib/supabase';
 import { getPersonalizedGreeting, generatePersonalContext } from '../utils/personalContext.js';
+import { tarotDeck } from '../data/tarotDeck.js';
 import { useAnalytics } from '../composables/useAnalytics.js';
 
 import ChatMessage from '../components/ChatMessage.vue';
@@ -264,6 +265,25 @@ const prepareCardsForAnimation = (cards) => {
     }));
 };
 
+const drawCardsLocally = (numCards = 3) => {
+    const deck = [...tarotDeck];
+    const drawn = [];
+    const positions = ['Pasado', 'Presente', 'Futuro'];
+    for (let i = 0; i < numCards; i++) {
+        if (deck.length === 0) break;
+        const randomIndex = Math.floor(Math.random() * deck.length);
+        const card = deck.splice(randomIndex, 1)[0];
+        const upright = Math.random() < 0.5;
+        drawn.push({
+            ...card,
+            upright,
+            orientation: upright ? 'Derecha' : 'Invertida',
+            posicion: positions[i] || `Posición ${i + 1}`,
+        });
+    }
+    return drawn;
+};
+
 const animateCards = async (cardsArray, messageRef) => {
     if (!cardsArray || cardsArray.length === 0) return;
 
@@ -480,40 +500,134 @@ const handleQuestionSubmitted = async (question) => {
             }
         }
         } else {
-            // Regular JSON response (fallback)
+            // Regular JSON response from /api/chat/message
             console.log('📄 Using regular JSON response');
             const result = await response.json();
             console.log('📥 JSON result:', result);
 
-            if (result.type === 'tarot_reading') {
-                // Preparar cartas con propiedades de animación
-                const preparedCards = prepareCardsForAnimation(result.cards);
+            if (result.type === 'ready_for_reading') {
+                // Phase 2: Draw cards client-side, animate, then request interpretation
+                console.log('🃏 Ready for reading — drawing cards locally...');
 
+                // Draw cards locally
+                const drawnCards = drawCardsLocally(3);
+                receivedCards = drawnCards;
+
+                // Track cards revealed
+                const cardNames = drawnCards.map(c => c.name);
+                trackTarotCardsRevealed(cardNames);
+
+                // Store future visibility state
+                currentFutureHidden.value = result.futureHidden || false;
+                currentCtaMessage.value = result.ctaMessage || null;
+                isAnonymousSession.value = result.isAnonymous || false;
+
+                // Prepare cards for animation (all start hidden)
+                const preparedCards = prepareCardsForAnimation(drawnCards);
+
+                // Create reading message — cards visible, no interpretation yet, NOT loading (no "meditando" yet)
                 assistantMessage = {
                     id: `local-${Date.now()}-ai`,
                     type: 'tarotReading',
                     question,
                     drawnCards: preparedCards,
-                    interpretation: result.interpretation,
+                    interpretation: '',
+                    sections: {},
                     isLoading: false,
                     role: 'assistant',
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    futureHidden: currentFutureHidden.value,
+                    ctaMessage: currentCtaMessage.value,
+                    isAnonymous: isAnonymousSession.value
                 };
 
                 readings.value.push(assistantMessage);
+                await nextTick();
                 scrollToBottom();
 
-                // Animar cartas
+                // Animate cards one by one (500ms stagger) — wait for completion
+                console.log('🎬 Animating cards one by one...');
                 await animateCards(preparedCards, assistantMessage);
 
-                receivedCards = result.cards;
-                fullInterpretation = result.interpretation;
+                // Cards fully revealed → NOW show "El oráculo está meditando..."
+                console.log('🔮 Cards animated. Showing meditation message and requesting interpretation...');
+                assistantMessage.isLoading = true;
+                assistantMessage.drawnCards = [...preparedCards]; // trigger reactivity
+                await nextTick();
+                scrollToBottom();
 
-                if (result.title) {
-                    setTimeout(() => {
-                        chatStore.fetchChatList(userId);
-                    }, 1000);
+                // Phase 2: Request interpretation from /api/chat/interpret with SSE
+                const interpretResponse = await fetch(`${API_URL}/api/chat/interpret`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question,
+                        history: historyForAgents,
+                        personalContext: personalContextStr,
+                        drawnCards,
+                        userId: effectiveUserId,
+                        chatId,
+                        contextSummary: result.contextSummary || null,
+                        memoryContext: result.memoryContext || null
+                    })
+                });
+
+                if (!interpretResponse.ok) {
+                    const errorData = await interpretResponse.json();
+                    throw new Error(errorData.error || 'Error al obtener la interpretación.');
                 }
+
+                // Process SSE stream from /api/chat/interpret
+                const interpretReader = interpretResponse.body.getReader();
+                const interpretDecoder = new TextDecoder();
+                let interpretBuffer = '';
+
+                while (true) {
+                    const { done: streamDone, value: streamValue } = await interpretReader.read();
+                    if (streamDone) break;
+
+                    interpretBuffer += interpretDecoder.decode(streamValue, { stream: true });
+                    const streamEvents = interpretBuffer.split('\n\n');
+                    interpretBuffer = streamEvents.pop();
+
+                    for (const evt of streamEvents) {
+                        if (!evt.trim()) continue;
+                        try {
+                            const evtLines = evt.split('\n');
+                            const evtType = evtLines[0].replace('event: ', '');
+                            const evtDataLine = evtLines[1].replace('data: ', '');
+                            const evtData = JSON.parse(evtDataLine);
+
+                            if (evtType === 'section') {
+                                if (!assistantMessage.sections) assistantMessage.sections = {};
+                                assistantMessage.sections[evtData.section] = {
+                                    text: evtData.text,
+                                    isTeaser: evtData.isTeaser || false
+                                };
+                                assistantMessage.sections = { ...assistantMessage.sections };
+                                assistantMessage.isLoading = false;
+                                nextTick().then(() => scrollToBottom());
+                            }
+
+                            if (evtType === 'interpretation') {
+                                fullInterpretation += evtData.text;
+                                if (assistantMessage) {
+                                    assistantMessage.interpretation = fullInterpretation;
+                                    assistantMessage.isLoading = false;
+                                }
+                            }
+
+                            if (evtType === 'title') {
+                                setTimeout(() => {
+                                    chatStore.fetchChatList(userId);
+                                }, 1000);
+                            }
+                        } catch (parseErr) {
+                            console.error('❌ Error parsing interpret event:', parseErr);
+                        }
+                    }
+                }
+
             } else if (result.type === 'context_question') {
                 // Oracle is asking a contextual question before drawing cards
                 assistantMessage = {
