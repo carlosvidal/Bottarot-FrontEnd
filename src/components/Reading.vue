@@ -322,7 +322,7 @@ const playAudio = async () => {
     position: relative;
     width: 100%;
     padding-top: 170%;
-    border-radius: 12px;
+    border-radius: 6px;
     overflow: hidden;
     background-color: var(--color-white);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -561,7 +561,7 @@ const playAudio = async () => {
     }
 
     .card-visual-wrapper {
-        border-radius: 15px;
+        border-radius: 12px;
     }
 }
 </style>
