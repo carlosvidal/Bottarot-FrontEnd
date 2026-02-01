@@ -62,7 +62,7 @@ const router = createRouter({
         } else {
           const validLangs = ['es', 'en', 'it', 'pt', 'fr'];
           if (to.params.lang && !validLangs.includes(to.params.lang)) {
-            next({ name: 'landing', params: { lang: 'es' } });
+            next({ name: 'landing', params: { lang: 'en' } });
           } else {
             next();
           }

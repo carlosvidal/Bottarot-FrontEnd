@@ -15,8 +15,8 @@ import { initCookieConsent } from './utils/cookieConsent.js'
 // Create i18n instance
 const i18n = createI18n({
   legacy: false, // Use Composition API mode
-  locale: 'es', // Default locale
-  fallbackLocale: 'es',
+  locale: 'en', // Default locale
+  fallbackLocale: 'en',
   messages: {
     es,
     en,
