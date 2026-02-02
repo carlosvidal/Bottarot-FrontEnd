@@ -244,17 +244,31 @@ const handleCheckoutSuccess = async () => {
 
 const ensureChatExistsInDb = async (chatId, userId, initialQuestion) => {
     try {
-        const { count } = await supabase.from('chats').select('id', { count: 'exact', head: true }).eq('id', chatId);
+        const { count, error: countError } = await supabase.from('chats').select('id', { count: 'exact', head: true }).eq('id', chatId);
+        if (countError) {
+            console.error('❌ DB Error checking chat exists:', countError);
+            return;
+        }
         if (count === 0) {
-            await supabase.from('chats').insert({ id: chatId, user_id: userId, title: initialQuestion.substring(0, 50) });
+            const { error: insertError } = await supabase.from('chats').insert({ id: chatId, user_id: userId, title: initialQuestion.substring(0, 50) });
+            if (insertError) {
+                console.error('❌ DB Error creating chat:', insertError);
+            } else {
+                console.log('✅ Chat created in DB:', chatId);
+            }
         }
     } catch (dbError) { console.error('❌ DB Error ensuring chat exists:', dbError); throw dbError; }
 };
 
 const saveMessageToDb = async ({ chatId, userId, role, content, cards = null }) => {
     try {
-        await supabase.rpc('save_message', { p_chat_id: chatId, p_user_id: userId, p_role: role, p_content: content, p_cards: cards });
-    } catch (dbError) { console.error('❌ DB Error saving message:', dbError); }
+        const { error } = await supabase.rpc('save_message', { p_chat_id: chatId, p_user_id: userId, p_role: role, p_content: content, p_cards: cards });
+        if (error) {
+            console.error('❌ DB Error saving message:', error.message, error.details, error.hint);
+        } else {
+            console.log('✅ Message saved:', role, chatId);
+        }
+    } catch (dbError) { console.error('❌ DB Error saving message (exception):', dbError); }
 };
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
