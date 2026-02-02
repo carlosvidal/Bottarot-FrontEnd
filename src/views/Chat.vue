@@ -447,6 +447,8 @@ const handleQuestionSubmitted = async (question) => {
                         };
 
                         readings.value.push(assistantMessage);
+                        // Get reactive proxy — original is non-reactive
+                        assistantMessage = readings.value[readings.value.length - 1];
                         console.log('✅ Cartas agregadas a readings.value, total items:', readings.value.length);
                         console.log('🎬 Iniciando animación de cartas INMEDIATAMENTE...');
 
@@ -542,6 +544,8 @@ const handleQuestionSubmitted = async (question) => {
                 };
 
                 readings.value.push(assistantMessage);
+                // Get reactive proxy — the original assistantMessage is non-reactive
+                assistantMessage = readings.value[readings.value.length - 1];
                 await nextTick();
                 scrollToBottom();
 
@@ -788,13 +792,15 @@ onMounted(async () => {
     }
 });
 
-watch(() => route.params.chatId, (newChatId) => {
+watch(() => route.params.chatId, async (newChatId) => {
     if (newChatId && typeof newChatId === 'string') {
         // Skip history load if a post-OAuth transfer is pending — onMounted handles it
         if (isTransferring.value || sessionStorage.getItem('bottarot_pending_transfer')) {
             console.log('Skipping history load — pending transfer detected');
             return;
         }
+        // Wait for auth to initialize before loading history (needed on page refresh)
+        await waitForAuth();
         loadChatHistory(newChatId);
     }
 }, { immediate: true });
