@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { getPersonalizedGreeting, generatePersonalContext } from '../utils/personalContext.js';
 import { tarotDeck } from '../data/tarotDeck.js';
 import { useAnalytics } from '../composables/useAnalytics.js';
+import { useI18n } from 'vue-i18n';
 
 import ChatMessage from '../components/ChatMessage.vue';
 import Reading from '../components/Reading.vue';
@@ -40,6 +41,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const chatStore = useChatStore();
 const { trackTarotReadingStart, trackTarotReadingComplete, trackTarotCardsRevealed, trackFirstReading, trackWeeklyLimitReached } = useAnalytics();
+const { t } = useI18n();
 
 // 2. Function Declarations
 const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
@@ -515,7 +517,7 @@ const handleQuestionSubmitted = async (question) => {
                 const preCardMessage = {
                     id: `local-${Date.now()}-precard`,
                     type: 'message',
-                    content: 'Bien, vamos a ver qué tienen para decirnos las cartas...',
+                    content: t('reading.preCardMessage'),
                     role: 'assistant',
                     timestamp: new Date().toISOString()
                 };

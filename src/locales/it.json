@@ -64,6 +64,7 @@
   },
   "reading": {
     "oracleThinking": "L'oracolo sta meditando sul tuo destino...",
+    "preCardMessage": "Vediamo cosa hanno da dirci le carte...",
     "listen": "Ascolta",
     "pause": "Pausa",
     "loading": "Caricamento...",

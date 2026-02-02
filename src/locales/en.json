@@ -64,6 +64,7 @@
   },
   "reading": {
     "oracleThinking": "The oracle is contemplating your destiny...",
+    "preCardMessage": "Let's see what the cards have to tell us...",
     "listen": "Listen",
     "pause": "Pause",
     "loading": "Loading...",
