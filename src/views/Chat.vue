@@ -511,6 +511,19 @@ const handleQuestionSubmitted = async (question) => {
                 // Phase 2: Draw cards client-side, animate, then request interpretation
                 console.log('🃏 Ready for reading — drawing cards locally...');
 
+                // Pre-card draw message
+                const preCardMessage = {
+                    id: `local-${Date.now()}-precard`,
+                    type: 'message',
+                    content: 'Bien, vamos a ver qué tienen para decirnos las cartas...',
+                    role: 'assistant',
+                    timestamp: new Date().toISOString()
+                };
+                readings.value.push(preCardMessage);
+                await nextTick();
+                scrollToBottom();
+                await delay(1500);
+
                 // Draw cards locally
                 const drawnCards = drawCardsLocally(3);
                 receivedCards = drawnCards;
@@ -558,7 +571,7 @@ const handleQuestionSubmitted = async (question) => {
                 assistantMessage.isLoading = true;
                 assistantMessage.drawnCards = [...preparedCards]; // trigger reactivity
                 await nextTick();
-                scrollToBottom();
+                // No auto-scroll from here on — user scrolls manually as they read
 
                 // Phase 2: Request interpretation from /api/chat/interpret with SSE
                 const interpretResponse = await fetch(`${API_URL}/api/chat/interpret`, {
@@ -610,7 +623,7 @@ const handleQuestionSubmitted = async (question) => {
                                 };
                                 assistantMessage.sections = { ...assistantMessage.sections };
                                 assistantMessage.isLoading = false;
-                                nextTick().then(() => scrollToBottom());
+                                // No auto-scroll — user scrolls manually as they read
                             }
 
                             if (evtType === 'interpretation') {
@@ -712,7 +725,6 @@ const handleQuestionSubmitted = async (question) => {
         });
     } finally {
         isLoading.value = false;
-        scrollToBottom();
     }
 };
 
