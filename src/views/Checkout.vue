@@ -21,6 +21,8 @@
                 <router-link to="/chat/new" class="back-link">← Volver al chat</router-link>
                 <h2>Desbloquea tu Destino Completo</h2>
                 <p class="plans-subtitle">Elige el camino que mejor se adapte a tu viaje espiritual</p>
+                <p class="one-time-notice">Todos nuestros planes son pagos únicos, sin renovación automática.</p>
+
                 <div class="plans-grid">
                     <div
                         v-for="plan in plans"
@@ -340,6 +342,17 @@ p {
     text-align: center;
     margin-bottom: 30px;
     font-style: italic;
+}
+
+.one-time-notice {
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+    color: #4ade80;
+    text-align: center;
 }
 
 .plans-grid {

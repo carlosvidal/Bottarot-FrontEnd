@@ -2,7 +2,7 @@
     <div class="legal-container">
         <div class="content">
             <h1>Políticas de Cookies</h1>
-            <p>Última actualización: 27 de Enero de 2026</p>
+            <p class="update-date">Última actualización: 6 de Febrero de 2026</p>
 
             <p>Esta página describe qué son las cookies y cómo las utilizamos en Free Tarot Fun (freetarot.fun).</p>
 

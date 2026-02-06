@@ -115,6 +115,7 @@ onMounted(() => {
                 <!-- Plan selection -->
                 <div v-else-if="!selectedPlan" class="plans-section">
                     <p class="plans-subtitle">Elige el camino que mejor se adapte a tu viaje espiritual</p>
+                    <p class="one-time-notice">Pagos únicos, sin renovación automática</p>
                     <div class="plans-grid">
                         <div
                             v-for="plan in plans"
@@ -305,8 +306,19 @@ onMounted(() => {
     color: var(--text-secondary);
     font-size: 1rem;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     font-style: italic;
+}
+
+.one-time-notice {
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    color: #4ade80;
+    text-align: center;
 }
 
 .plans-grid {

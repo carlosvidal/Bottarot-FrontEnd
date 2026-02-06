@@ -11,17 +11,17 @@
             <p>El uso de cualquier información o material en este sitio web es bajo tu propio riesgo, para lo cual no seremos responsables. Será tu propia responsabilidad asegurar que cualquier producto, servicio o información disponible a través de este sitio web cumpla con tus requisitos específicos.</p>
             <p><strong>Las lecturas de tarot proporcionadas por este servicio son únicamente para fines de entretenimiento y autoexploración. No deben considerarse como consejo profesional, médico, legal, financiero o psicológico.</strong></p>
 
-            <h2>2. Suscripciones y Pagos</h2>
-            <p>Ofrecemos diferentes planes de suscripción:</p>
+            <h2>2. Planes y Pagos</h2>
+            <p>Ofrecemos diferentes planes de acceso:</p>
             <ul>
                 <li><strong>Plan Gratuito:</strong> 1 lectura por día, historial limitado, 5 revelaciones de futuro.</li>
                 <li><strong>Ritual de Iniciación ($1 USD):</strong> 7 días de acceso completo, lecturas ilimitadas, futuro siempre visible.</li>
-                <li><strong>Plan Mensual ($8 USD/mes):</strong> Acceso completo con renovación mensual automática.</li>
-                <li><strong>Plan Anual ($64 USD/año):</strong> Acceso completo con el mejor valor (ahorro del 33%).</li>
+                <li><strong>Pase Mensual ($8 USD):</strong> 30 días de acceso completo.</li>
+                <li><strong>Pase Anual ($64 USD):</strong> 365 días de acceso completo con el mejor valor (ahorro del 33%).</li>
             </ul>
             <p>Los pagos se procesan de forma segura a través de PayPal. No almacenamos información de tarjetas de crédito en nuestros servidores.</p>
-            <p><strong>Renovación automática:</strong> Los planes mensuales y anuales se renuevan automáticamente al final de cada período de facturación. Puedes cancelar en cualquier momento desde tu perfil o contactándonos por email.</p>
-            <p><strong>Cancelación:</strong> Al cancelar, mantendrás acceso hasta el final del período ya pagado. No se realizan reembolsos proporcionales por el tiempo restante.</p>
+            <p><strong>Pagos únicos:</strong> Todos nuestros planes de pago son compras únicas (no son suscripciones con renovación automática). Al finalizar el período de tu plan, volverás automáticamente al plan gratuito a menos que realices una nueva compra.</p>
+            <p><strong>Sin renovación automática:</strong> No realizamos cargos automáticos. Siempre tendrás el control total sobre cuándo y si deseas renovar tu acceso premium.</p>
 
             <h2>3. Política de Reembolsos</h2>
             <p>Ofrecemos reembolsos bajo las siguientes condiciones:</p>
