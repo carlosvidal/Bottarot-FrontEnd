@@ -45,6 +45,12 @@
       <!-- Tabs -->
       <div class="tabs">
         <button
+          :class="{ active: activeTab === 'users' }"
+          @click="activeTab = 'users'"
+        >
+          Usuarios
+        </button>
+        <button
           :class="{ active: activeTab === 'subscriptions' }"
           @click="activeTab = 'subscriptions'"
         >
@@ -56,6 +62,41 @@
         >
           Pagos
         </button>
+      </div>
+
+      <!-- Users Table -->
+      <div v-if="activeTab === 'users'" class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Registro</th>
+              <th>Último Login</th>
+              <th>Plan</th>
+              <th>Chats</th>
+              <th>Proveedor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in users" :key="user.id">
+              <td>{{ user.email }}</td>
+              <td>{{ user.name }}</td>
+              <td>{{ formatDate(user.created_at) }}</td>
+              <td>{{ formatDate(user.last_sign_in) }}</td>
+              <td>
+                <span :class="['status', user.is_premium ? 'active' : 'inactive']">
+                  {{ user.is_premium ? 'Premium' : 'Free' }}
+                </span>
+              </td>
+              <td>{{ user.chat_count }}</td>
+              <td class="provider">{{ user.provider }}</td>
+            </tr>
+            <tr v-if="users.length === 0">
+              <td colspan="7" class="empty">No hay usuarios</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Subscriptions Table -->
@@ -133,9 +174,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const password = ref('')
 const isAuthenticated = ref(false)
 const error = ref('')
-const activeTab = ref('subscriptions')
+const activeTab = ref('users')
 
 const stats = ref(null)
+const users = ref([])
 const subscriptions = ref([])
 const payments = ref([])
 
@@ -182,6 +224,13 @@ async function loadData() {
     if (statsRes.ok) {
       stats.value = await statsRes.json()
       isAuthenticated.value = true
+    }
+
+    // Load users
+    const usersRes = await fetch(`${API_URL}/api/admin/users`, { headers })
+    if (usersRes.ok) {
+      const data = await usersRes.json()
+      users.value = data.users || []
     }
 
     // Load subscriptions
@@ -388,6 +437,12 @@ tr:hover {
   font-family: monospace;
   font-size: 11px;
   color: var(--text-tertiary);
+}
+
+.provider {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: capitalize;
 }
 
 .empty {
