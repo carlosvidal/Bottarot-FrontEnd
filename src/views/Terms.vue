@@ -128,8 +128,9 @@
             <p>Si no estás de acuerdo con los nuevos términos, puedes cancelar tu cuenta antes de que entren en vigor.</p>
 
             <h2>11. Ley Aplicable y Jurisdicción</h2>
-            <p>Estos términos se rigen por las leyes de España y la Unión Europea, incluyendo el Reglamento General de Protección de Datos (GDPR).</p>
-            <p>Para resolver cualquier disputa, intentaremos primero una solución amistosa. Si no es posible, las disputas se someterán a los tribunales competentes de España.</p>
+            <p>Estos términos se rigen por las leyes de la República del Perú, incluyendo la Ley N° 29733 (Ley de Protección de Datos Personales) y su Reglamento (Decreto Supremo N.º 016-2024-JUS), que es compatible con el Reglamento General de Protección de Datos (GDPR) de la Unión Europea.</p>
+            <p>Para usuarios de la Unión Europea, garantizamos el cumplimiento del GDPR en lo que respecta al tratamiento de sus datos personales.</p>
+            <p>Para resolver cualquier disputa, intentaremos primero una solución amistosa. Si no es posible, las disputas se someterán a los tribunales competentes de Lima, Perú.</p>
 
             <h2>12. Contacto</h2>
             <p>Si tienes preguntas sobre estos términos, puedes contactarnos en:</p>

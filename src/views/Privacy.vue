@@ -4,7 +4,7 @@
             <h1>Política de Privacidad</h1>
             <p class="update-date">Última actualización: 6 de Febrero de 2026</p>
 
-            <p>Esta política de privacidad establece cómo Free Tarot Fun (freetarot.fun) recopila, utiliza, protege y comparte tu información cuando utilizas nuestro servicio. Nos comprometemos a proteger tu privacidad y a cumplir con el Reglamento General de Protección de Datos (GDPR) y otras leyes aplicables.</p>
+            <p>Esta política de privacidad establece cómo Free Tarot Fun (freetarot.fun) recopila, utiliza, protege y comparte tu información cuando utilizas nuestro servicio. Nos comprometemos a proteger tu privacidad y a cumplir con la Ley N° 29733 de Protección de Datos Personales de Perú y su Reglamento (D.S. N.º 016-2024-JUS), así como con el Reglamento General de Protección de Datos (GDPR) de la Unión Europea para nuestros usuarios europeos.</p>
 
             <h2>1. Información que Recopilamos</h2>
 
