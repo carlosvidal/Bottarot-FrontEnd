@@ -7,6 +7,13 @@ import { Star, Share2, Trash2, Pencil, Check, X } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useAnalytics } from '../composables/useAnalytics.js';
 
+const props = defineProps({
+    readingComplete: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const emit = defineEmits(['share-chat']);
 const { t } = useI18n();
 const { trackTarotReadingShare, trackTarotReadingFavorite } = useAnalytics();
@@ -112,7 +119,7 @@ const toggleFavorite = () => {
                 </template>
             </div>
         </div>
-        <div class="header-right">
+        <div v-if="readingComplete" class="header-right">
             <button
                 @click="toggleFavorite"
                 class="header-action favorite-btn"

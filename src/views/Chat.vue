@@ -51,6 +51,15 @@ const chatStore = useChatStore();
 const { trackTarotReadingStart, trackTarotReadingComplete, trackTarotCardsRevealed, trackFirstReading, trackWeeklyLimitReached } = useAnalytics();
 const { t } = useI18n();
 
+// Computed: Reading is complete when we have a tarot reading with consejo section
+const hasCompletedReading = computed(() => {
+    return readings.value.some(r =>
+        r.type === 'tarotReading' &&
+        r.drawnCards?.length === 3 &&
+        (r.sections?.consejo || r.interpretation)
+    );
+});
+
 // 2. Function Declarations
 const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
 
@@ -961,7 +970,7 @@ watch(readings, () => {
             <Sidebar @close-sidebar="isSidebarOpen = false" />
         </div>
         <div class="main-content">
-            <ChatHeader @share-chat="handleShareChat">
+            <ChatHeader :reading-complete="hasCompletedReading" @share-chat="handleShareChat">
                 <template #menu-button>
                     <button class="menu-button" @click="isSidebarOpen = !isSidebarOpen" aria-label="Abrir menú">
                         <span></span>
