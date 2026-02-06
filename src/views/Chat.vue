@@ -77,9 +77,14 @@ const loadChatHistory = async (chatId, options = {}) => {
     const { animateEntrance = false } = options;
     const API_URL = import.meta.env.VITE_API_URL;
 
-    // Si no hay usuario logueado, verificar si existe un share público
+    // Si no hay usuario logueado, es una sesión anónima
     if (!auth.user?.id) {
         readings.value = [];
+        isAnonymousSession.value = true;
+
+        // Para chats anónimos nuevos, no intentar cargar historial
+        // El usuario puede hacer su pregunta y el chat se creará al enviar
+        // Solo verificar shares públicos si el chat pudiera existir previamente
         try {
             const response = await fetch(`${API_URL}/api/chat/${chatId}/public-share`);
             if (response.ok) {
@@ -90,10 +95,10 @@ const loadChatHistory = async (chatId, options = {}) => {
                 }
             }
         } catch (e) {
-            console.log('Could not check for public share');
+            // No public share - that's fine for a new anonymous session
+            console.log('No public share found - starting fresh anonymous session');
         }
-        // No share exists, redirect to home
-        router.push({ name: 'new-chat' });
+        // Don't redirect - let user stay on this chat and ask a question
         return;
     }
 
