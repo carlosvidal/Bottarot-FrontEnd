@@ -32,6 +32,9 @@ const parsedContent = computed(() => {
 });
 
 // --- ElevenLabs TTS Logic ---
+// Feature flag: disable TTS (ElevenLabs) temporarily
+const TTS_ENABLED = false;
+
 const audio = ref(null);
 const audioState = ref('idle'); // idle, loading, playing, error
 
@@ -93,7 +96,7 @@ const playAudio = async () => {
 <template>
     <div :class="messageClass">
         <div class="message-bubble">
-            <div class="message-header" v-if="!isUser">
+            <div class="message-header" v-if="TTS_ENABLED && !isUser">
                 <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
                     <span v-if="audioState === 'idle' || audioState === 'error'">▶️</span>
                     <span v-if="audioState === 'loading'">⏳</span>

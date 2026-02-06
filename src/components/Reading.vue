@@ -7,6 +7,9 @@ import { useAnalytics } from '../composables/useAnalytics.js';
 const { t } = useI18n();
 const { trackTarotTTSPlay } = useAnalytics();
 
+// Feature flag: disable TTS (ElevenLabs) temporarily
+const TTS_ENABLED = false;
+
 const props = defineProps({
     cards: {
         type: Array,
@@ -239,7 +242,7 @@ const playAudio = async () => {
         <!-- V2: Section bubbles -->
         <template v-if="hasSections">
             <div class="sections-wrapper">
-                <div class="interpretation-header">
+                <div v-if="TTS_ENABLED" class="interpretation-header">
                     <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
                         <span v-if="audioState === 'idle' || audioState === 'error'">🔊 {{ t('reading.listen') }}</span>
                         <span v-if="audioState === 'loading'">⏳ {{ t('reading.loading') }}</span>
@@ -276,7 +279,7 @@ const playAudio = async () => {
 
         <!-- V1 fallback: single interpretation block -->
         <div v-else-if="interpretation" class="interpretation-wrapper">
-            <div class="interpretation-header">
+            <div v-if="TTS_ENABLED" class="interpretation-header">
                 <button @click="playAudio" class="tts-button" :disabled="audioState === 'loading'">
                     <span v-if="audioState === 'idle' || audioState === 'error'">🔊 {{ t('reading.listen') }}</span>
                     <span v-if="audioState === 'loading'">⏳ {{ t('reading.loading') }}</span>
