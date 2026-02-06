@@ -3,7 +3,7 @@ import { ref, computed, nextTick } from 'vue';
 import { useChatStore } from '../stores/chats';
 import { useAuthStore } from '../stores/auth';
 import { useRoute, useRouter } from 'vue-router';
-import { Star, Share2, Trash2, Pencil, Check, X, CheckCircle, Lock } from 'lucide-vue-next';
+import { Star, Share2, Trash2, Pencil, Check, X, CheckCircle, Lock, Home } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useAnalytics } from '../composables/useAnalytics.js';
 
@@ -34,6 +34,8 @@ const titleInput = ref(null);
 const currentChat = computed(() => {
     return chatStore.chatList.find(c => c.id === route.params.chatId);
 });
+
+const isAnonymous = computed(() => !auth.user);
 
 const startRename = async () => {
     if (!currentChat.value) return;
@@ -105,6 +107,9 @@ const handleClose = () => {
     <header class="chat-header">
         <div class="header-left">
             <slot name="menu-button"></slot>
+            <router-link v-if="isAnonymous" to="/landing" class="home-btn" :title="t('common.back')">
+                <Home :size="20" />
+            </router-link>
             <div v-if="currentChat" class="title-container">
                 <template v-if="!isRenaming">
                     <h2 class="chat-title">{{ currentChat.title || t('chat.untitled') }}</h2>
@@ -254,6 +259,26 @@ const handleClose = () => {
 
 .cancel-btn:hover {
     color: var(--color-error);
+}
+
+/* Home Button for anonymous users */
+.home-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    color: var(--text-secondary);
+    background: none;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.home-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--color-accent-text);
 }
 
 /* Action Buttons */
