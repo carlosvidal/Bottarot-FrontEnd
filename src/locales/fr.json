@@ -49,7 +49,12 @@
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce chat ? Cette action est irréversible.",
     "deleteError": "Impossible de supprimer le chat.",
     "renameError": "Impossible de renommer le chat.",
-    "favoriteError": "Impossible de mettre à jour le statut favori."
+    "favoriteError": "Impossible de mettre à jour le statut favori.",
+    "finalize": "Finaliser",
+    "finalized": "Finalisée",
+    "finalizeConfirm": "Finaliser cette lecture ? Vous ne pourrez plus poser de questions.",
+    "readingClosed": "Cette lecture a été finalisée",
+    "closeError": "Erreur lors de la finalisation de la lecture"
   },
   "cards": {
     "past": "Passé",

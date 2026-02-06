@@ -49,7 +49,12 @@
     "deleteConfirm": "Are you sure you want to delete this chat? This action cannot be undone.",
     "deleteError": "Could not delete the chat.",
     "renameError": "Could not rename the chat.",
-    "favoriteError": "Could not update favorite status."
+    "favoriteError": "Could not update favorite status.",
+    "finalize": "Finalize",
+    "finalized": "Finalized",
+    "finalizeConfirm": "Finalize this reading? You won't be able to ask more questions.",
+    "readingClosed": "This reading has been finalized",
+    "closeError": "Error finalizing the reading"
   },
   "cards": {
     "past": "Past",

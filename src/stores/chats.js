@@ -106,6 +106,38 @@ export const useChatStore = defineStore('chats', () => {
     }
   };
 
+  const closeChat = async (chatId, userId) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const API_URL = import.meta.env.VITE_API_URL;
+    const chat = chatList.value.find(c => c.id === chatId);
+    if (!chat) return;
+
+    // Optimistically update UI
+    chat.is_closed = true;
+
+    try {
+      const response = await fetch(`${API_URL}/api/chat/${chatId}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        chat.is_closed = false;
+        throw new Error('Failed to close chat');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error closing chat:', error);
+      // Revert on error
+      chat.is_closed = false;
+      throw error;
+    }
+  };
+
   return {
     chatList,
     isLoading,
@@ -113,5 +145,6 @@ export const useChatStore = defineStore('chats', () => {
     deleteChat,
     renameChat,
     toggleFavorite,
+    closeChat,
   };
 });

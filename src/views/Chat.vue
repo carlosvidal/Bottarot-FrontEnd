@@ -8,6 +8,7 @@ import { getPersonalizedGreeting, generatePersonalContext } from '../utils/perso
 import { tarotDeck } from '../data/tarotDeck.js';
 import { useAnalytics } from '../composables/useAnalytics.js';
 import { useI18n } from 'vue-i18n';
+import { Lock } from 'lucide-vue-next';
 
 import ChatMessage from '../components/ChatMessage.vue';
 import Reading from '../components/Reading.vue';
@@ -58,6 +59,12 @@ const hasCompletedReading = computed(() => {
         r.drawnCards?.length === 3 &&
         (r.sections?.consejo || r.interpretation)
     );
+});
+
+// Computed: Check if chat is closed (finalized)
+const isChatClosed = computed(() => {
+    const chat = chatStore.chatList.find(c => c.id === route.params.chatId);
+    return chat?.is_closed || false;
 });
 
 // 2. Function Declarations
@@ -336,9 +343,15 @@ const handleShareChat = async () => {
             throw new Error(errorData.error || t('share.error'));
         }
 
-        const { shareUrl: url } = await response.json();
-        shareUrl.value = url;
+        const data = await response.json();
+        shareUrl.value = data.shareUrl;
         shareIsLoading.value = false;
+
+        // Update local state if chat was auto-closed by backend
+        if (data.chatClosed) {
+            const chat = chatStore.chatList.find(c => c.id === chatId);
+            if (chat) chat.is_closed = true;
+        }
 
         // Try Web Share API (on mobile, close modal and use native share)
         if (navigator.share) {
@@ -363,6 +376,19 @@ const handleShareChat = async () => {
         console.error('Share error:', error);
         shareIsLoading.value = false;
         shareError.value = error.message || t('share.error');
+    }
+};
+
+// Handle close/finalize chat
+const handleCloseChat = async () => {
+    const chatId = route.params.chatId;
+    if (!chatId || !auth.user?.id) return;
+
+    try {
+        await chatStore.closeChat(chatId, auth.user.id);
+    } catch (error) {
+        console.error('Failed to close chat:', error);
+        alert(t('chat.closeError') || 'Error al finalizar la lectura');
     }
 };
 
@@ -970,7 +996,12 @@ watch(readings, () => {
             <Sidebar @close-sidebar="isSidebarOpen = false" />
         </div>
         <div class="main-content">
-            <ChatHeader :reading-complete="hasCompletedReading" @share-chat="handleShareChat">
+            <ChatHeader
+                :reading-complete="hasCompletedReading"
+                :is-closed="isChatClosed"
+                @share-chat="handleShareChat"
+                @close-chat="handleCloseChat"
+            >
                 <template #menu-button>
                     <button class="menu-button" @click="isSidebarOpen = !isSidebarOpen" aria-label="Abrir menú">
                         <span></span>
@@ -1010,7 +1041,11 @@ watch(readings, () => {
                 </div>
             </main>
             <footer class="form-container">
-                <QuestionForm @question-submitted="handleQuestionSubmitted" :is-disabled="isLoading" />
+                <div v-if="isChatClosed" class="closed-message">
+                    <Lock :size="20" />
+                    <p>{{ t('chat.readingClosed') }}</p>
+                </div>
+                <QuestionForm v-else @question-submitted="handleQuestionSubmitted" :is-disabled="isLoading" />
             </footer>
         </div>
         <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="overlay"></div>
@@ -1102,6 +1137,22 @@ watch(readings, () => {
 .welcome-message h2 { font-size: 1.8rem; color: var(--color-accent-text); margin-bottom: 15px; }
 .welcome-message p { font-size: 1rem; max-width: 500px; margin: 0 auto; line-height: 1.6; }
 .form-container { flex-shrink: 0; }
+
+/* Closed message (when reading is finalized) */
+.closed-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 20px;
+    background: rgba(74, 222, 128, 0.1);
+    border-top: 1px solid rgba(74, 222, 128, 0.3);
+    color: #4ade80;
+    font-size: 0.95rem;
+}
+.closed-message p {
+    margin: 0;
+}
 
 /* Menu Button (hamburger) */
 .menu-button {

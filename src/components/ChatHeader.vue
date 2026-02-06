@@ -3,7 +3,7 @@ import { ref, computed, nextTick } from 'vue';
 import { useChatStore } from '../stores/chats';
 import { useAuthStore } from '../stores/auth';
 import { useRoute, useRouter } from 'vue-router';
-import { Star, Share2, Trash2, Pencil, Check, X } from 'lucide-vue-next';
+import { Star, Share2, Trash2, Pencil, Check, X, CheckCircle, Lock } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useAnalytics } from '../composables/useAnalytics.js';
 
@@ -11,10 +11,14 @@ const props = defineProps({
     readingComplete: {
         type: Boolean,
         default: false
+    },
+    isClosed: {
+        type: Boolean,
+        default: false
     }
 });
 
-const emit = defineEmits(['share-chat']);
+const emit = defineEmits(['share-chat', 'close-chat']);
 const { t } = useI18n();
 const { trackTarotReadingShare, trackTarotReadingFavorite } = useAnalytics();
 
@@ -89,6 +93,12 @@ const toggleFavorite = () => {
             alert(t('chat.favoriteError'));
         });
 };
+
+const handleClose = () => {
+    if (window.confirm(t('chat.finalizeConfirm'))) {
+        emit('close-chat');
+    }
+};
 </script>
 
 <template>
@@ -120,6 +130,23 @@ const toggleFavorite = () => {
             </div>
         </div>
         <div v-if="readingComplete" class="header-right">
+            <!-- Finalize button (only if not closed) -->
+            <button
+                v-if="!isClosed"
+                @click="handleClose"
+                class="header-action finalize-btn"
+                :title="t('chat.finalize')"
+            >
+                <CheckCircle :size="18" />
+                <span class="btn-text">{{ t('chat.finalize') }}</span>
+            </button>
+
+            <!-- Closed indicator -->
+            <span v-if="isClosed" class="closed-badge">
+                <Lock :size="14" />
+                <span>{{ t('chat.finalized') }}</span>
+            </span>
+
             <button
                 @click="toggleFavorite"
                 class="header-action favorite-btn"
@@ -129,7 +156,7 @@ const toggleFavorite = () => {
                 <Star :size="18" :fill="currentChat?.is_favorite ? 'currentColor' : 'none'" />
                 <span class="btn-text">{{ t('chat.favorite') }}</span>
             </button>
-            <button @click="handleShare" class="header-action" :title="t('chat.share')">
+            <button v-if="!isClosed" @click="handleShare" class="header-action" :title="t('chat.share')">
                 <Share2 :size="18" />
                 <span class="btn-text">{{ t('chat.share') }}</span>
             </button>
@@ -258,6 +285,30 @@ const toggleFavorite = () => {
 .favorite-btn.is-favorite {
     color: var(--color-accent-text);
     border-color: var(--color-accent-text);
+}
+
+/* Finalize Button */
+.finalize-btn {
+    border-color: rgba(74, 222, 128, 0.5);
+    color: #4ade80;
+}
+
+.finalize-btn:hover {
+    background-color: rgba(74, 222, 128, 0.2);
+    border-color: #4ade80;
+}
+
+/* Closed Badge */
+.closed-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: rgba(74, 222, 128, 0.15);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 6px;
+    color: #4ade80;
+    font-size: 0.85rem;
 }
 
 /* Delete Button */
