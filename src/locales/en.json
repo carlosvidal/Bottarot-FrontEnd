@@ -245,5 +245,18 @@
     "saved": "Saved successfully",
     "updated": "Updated successfully",
     "deleted": "Deleted successfully"
+  },
+  "share": {
+    "title": "Share reading",
+    "subtitle": "Share your tarot reading with friends",
+    "copy": "Copy",
+    "copied": "Copied",
+    "error": "Error sharing. Please try again.",
+    "defaultTitle": "My tarot reading",
+    "defaultText": "Check out my tarot reading",
+    "shareText": "Check out my tarot reading on Free Tarot Fun",
+    "viaWhatsApp": "Share via WhatsApp",
+    "viaTelegram": "Share via Telegram",
+    "note": "This reading will be shared anonymously"
   }
 }

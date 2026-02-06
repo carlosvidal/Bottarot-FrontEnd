@@ -245,5 +245,18 @@
     "saved": "Salvato con successo",
     "updated": "Aggiornato con successo",
     "deleted": "Eliminato con successo"
+  },
+  "share": {
+    "title": "Condividi lettura",
+    "subtitle": "Condividi la tua lettura dei tarocchi con gli amici",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "error": "Errore durante la condivisione. Riprova.",
+    "defaultTitle": "La mia lettura dei tarocchi",
+    "defaultText": "Guarda la mia lettura dei tarocchi",
+    "shareText": "Guarda la mia lettura dei tarocchi su Free Tarot Fun",
+    "viaWhatsApp": "Condividi via WhatsApp",
+    "viaTelegram": "Condividi via Telegram",
+    "note": "Questa lettura sarà condivisa in modo anonimo"
   }
 }

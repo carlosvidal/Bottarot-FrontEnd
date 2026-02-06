@@ -245,5 +245,18 @@
     "saved": "Guardado exitosamente",
     "updated": "Actualizado exitosamente",
     "deleted": "Eliminado exitosamente"
+  },
+  "share": {
+    "title": "Compartir lectura",
+    "subtitle": "Comparte tu lectura de tarot con amigos",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "error": "Error al compartir. Inténtalo de nuevo.",
+    "defaultTitle": "Mi lectura de tarot",
+    "defaultText": "Mira mi lectura de tarot",
+    "shareText": "Mira mi lectura de tarot en Free Tarot Fun",
+    "viaWhatsApp": "Compartir por WhatsApp",
+    "viaTelegram": "Compartir por Telegram",
+    "note": "Esta lectura se compartirá de forma anónima"
   }
 }

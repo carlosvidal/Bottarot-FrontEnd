@@ -17,6 +17,7 @@ import QuestionForm from '../components/QuestionForm.vue';
 import DailyLimitModal from '../components/DailyLimitModal.vue';
 import AuthModal from '../components/AuthModal.vue';
 import CheckoutModal from '../components/CheckoutModal.vue';
+import ShareModal from '../components/ShareModal.vue';
 
 // 1. Core State and Store Initialization
 const readings = ref([]);
@@ -35,6 +36,11 @@ const showAuthModal = ref(false);
 const showCheckoutModal = ref(false);
 const pendingRevealReadingId = ref(null);
 const isTransferring = ref(false); // blocks history load during post-OAuth transfer
+
+// Share modal state
+const showShareModal = ref(false);
+const shareUrl = ref('');
+const shareTitle = ref('');
 
 const route = useRoute();
 const router = useRouter();
@@ -239,6 +245,62 @@ const handleCheckoutSuccess = async () => {
     if (pendingRevealReadingId.value) {
         await revealFutureInPlace(pendingRevealReadingId.value);
         pendingRevealReadingId.value = null;
+    }
+};
+
+// Handle share chat
+const handleShareChat = async () => {
+    const chatId = route.params.chatId;
+    if (!chatId || !auth.user?.id) {
+        // Need to be logged in to share
+        showAuthModal.value = true;
+        return;
+    }
+
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    try {
+        const response = await fetch(`${API_URL}/api/chat/${chatId}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: auth.user.id })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || t('share.error'));
+        }
+
+        const { shareUrl: url } = await response.json();
+        shareUrl.value = url;
+
+        // Get current chat title for share text
+        const currentChat = chatStore.chatList.find(c => c.id === chatId);
+        shareTitle.value = currentChat?.title || t('share.defaultTitle');
+
+        // Try Web Share API first (mobile native share)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: shareTitle.value,
+                    text: t('share.shareText'),
+                    url
+                });
+                return; // Native share successful, don't show modal
+            } catch (e) {
+                // User cancelled or share failed — fall through to modal
+                if (e.name !== 'AbortError') {
+                    console.log('Web Share failed, falling back to modal');
+                }
+            }
+        }
+
+        // Fallback: show share modal
+        showShareModal.value = true;
+
+    } catch (error) {
+        console.error('Share error:', error);
+        alert(t('share.error'));
     }
 };
 
@@ -846,7 +908,7 @@ watch(readings, () => {
             <Sidebar @close-sidebar="isSidebarOpen = false" />
         </div>
         <div class="main-content">
-            <ChatHeader>
+            <ChatHeader @share-chat="handleShareChat">
                 <template #menu-button>
                     <button class="menu-button" @click="isSidebarOpen = !isSidebarOpen" aria-label="Abrir menú">
                         <span></span>
@@ -910,6 +972,14 @@ watch(readings, () => {
             v-if="showCheckoutModal"
             @close="showCheckoutModal = false"
             @payment-success="handleCheckoutSuccess"
+        />
+
+        <!-- Share Modal -->
+        <ShareModal
+            v-if="showShareModal"
+            :share-url="shareUrl"
+            :title="shareTitle"
+            @close="showShareModal = false"
         />
     </div>
 </template>
