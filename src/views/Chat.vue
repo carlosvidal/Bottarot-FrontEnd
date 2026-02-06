@@ -55,14 +55,58 @@ const { t } = useI18n();
 const scrollToBottom = () => nextTick(() => { if (chatHistory.value) chatHistory.value.scrollTop = chatHistory.value.scrollHeight; });
 
 const loadChatHistory = async (chatId, options = {}) => {
-    // No cargar historial si es un chat nuevo o no hay usuario
-    if (!chatId || chatId === 'new' || !auth.user?.id) { readings.value = []; return; }
+    // No cargar historial si es un chat nuevo
+    if (!chatId || chatId === 'new') { readings.value = []; return; }
+
     const { animateEntrance = false } = options;
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    // Si no hay usuario logueado, verificar si existe un share público
+    if (!auth.user?.id) {
+        readings.value = [];
+        try {
+            const response = await fetch(`${API_URL}/api/chat/${chatId}/public-share`);
+            if (response.ok) {
+                const { hasShare, shareUrl } = await response.json();
+                if (hasShare && shareUrl) {
+                    window.location.href = shareUrl;
+                    return;
+                }
+            }
+        } catch (e) {
+            console.log('Could not check for public share');
+        }
+        // No share exists, redirect to home
+        router.push({ name: 'new-chat' });
+        return;
+    }
+
     isLoadingHistory.value = true;
     readings.value = [];
     try {
         const { data, error } = await supabase.rpc('get_chat_history', { p_chat_id: chatId });
         if (error) throw error;
+
+        // Si no hay datos, el chat no existe o no pertenece al usuario
+        // Verificar si hay un share público para este chat
+        if (!data || data.length === 0) {
+            try {
+                const response = await fetch(`${API_URL}/api/chat/${chatId}/public-share`);
+                if (response.ok) {
+                    const { hasShare, shareUrl } = await response.json();
+                    if (hasShare && shareUrl) {
+                        window.location.href = shareUrl;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('Could not check for public share');
+            }
+            // No share exists, stay on empty chat or redirect
+            isLoadingHistory.value = false;
+            return;
+        }
+
         const loadedReadings = [];
         let lastUserQuestion = '';
         data.forEach(msg => {
