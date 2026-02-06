@@ -1,11 +1,13 @@
 <script setup>
 import { ref } from 'vue';
-import { X, Copy, Check, MessageCircle, Send } from 'lucide-vue-next';
+import { X, Copy, Check, MessageCircle, Send, Loader2 } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
-  shareUrl: { type: String, required: true },
-  title: { type: String, default: '' }
+  shareUrl: { type: String, default: '' },
+  title: { type: String, default: '' },
+  isLoading: { type: Boolean, default: false },
+  error: { type: String, default: '' }
 });
 
 const emit = defineEmits(['close']);
@@ -62,32 +64,47 @@ const handleOverlayClick = (e) => {
         <h3 id="share-title">{{ t('share.title') }}</h3>
         <p class="share-subtitle">{{ t('share.subtitle') }}</p>
 
-        <div class="url-container">
-          <input
-            :value="shareUrl"
-            readonly
-            class="url-input"
-            @focus="$event.target.select()"
-          />
-          <button @click="copyUrl" class="copy-btn" :class="{ copied }">
-            <Check v-if="copied" :size="18" />
-            <Copy v-else :size="18" />
-            <span class="btn-text">{{ copied ? t('share.copied') : t('share.copy') }}</span>
-          </button>
+        <!-- Loading State -->
+        <div v-if="isLoading" class="loading-container">
+          <Loader2 :size="32" class="spinner" />
+          <p class="loading-text">{{ t('share.generating') }}</p>
         </div>
 
-        <div class="share-buttons">
-          <button @click="shareVia('whatsapp')" class="share-btn whatsapp" :title="t('share.viaWhatsApp')">
-            <MessageCircle :size="22" />
-            <span>WhatsApp</span>
-          </button>
-          <button @click="shareVia('telegram')" class="share-btn telegram" :title="t('share.viaTelegram')">
-            <Send :size="22" />
-            <span>Telegram</span>
-          </button>
+        <!-- Error State -->
+        <div v-else-if="error" class="error-container">
+          <p class="error-text">{{ error }}</p>
+          <button @click="emit('close')" class="retry-btn">{{ t('common.close') }}</button>
         </div>
 
-        <p class="share-note">{{ t('share.note') }}</p>
+        <!-- Ready State -->
+        <template v-else>
+          <div class="url-container">
+            <input
+              :value="shareUrl"
+              readonly
+              class="url-input"
+              @focus="$event.target.select()"
+            />
+            <button @click="copyUrl" class="copy-btn" :class="{ copied }">
+              <Check v-if="copied" :size="18" />
+              <Copy v-else :size="18" />
+              <span class="btn-text">{{ copied ? t('share.copied') : t('share.copy') }}</span>
+            </button>
+          </div>
+
+          <div class="share-buttons">
+            <button @click="shareVia('whatsapp')" class="share-btn whatsapp" :title="t('share.viaWhatsApp')">
+              <MessageCircle :size="22" />
+              <span>WhatsApp</span>
+            </button>
+            <button @click="shareVia('telegram')" class="share-btn telegram" :title="t('share.viaTelegram')">
+              <Send :size="22" />
+              <span>Telegram</span>
+            </button>
+          </div>
+
+          <p class="share-note">{{ t('share.note') }}</p>
+        </template>
       </div>
     </div>
   </Teleport>
@@ -260,6 +277,57 @@ h3 {
   font-size: 0.8rem;
   margin: 0;
   opacity: 0.8;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  color: var(--color-accent);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Error State */
+.error-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.error-text {
+  color: var(--color-error, #ef4444);
+  margin: 0 0 16px;
+}
+
+.retry-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: var(--bg-primary);
 }
 
 /* Mobile adjustments */

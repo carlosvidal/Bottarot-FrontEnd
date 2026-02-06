@@ -252,6 +252,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "error": "Error sharing. Please try again.",
+    "generating": "Generating link...",
     "defaultTitle": "My tarot reading",
     "defaultText": "Check out my tarot reading",
     "shareText": "Check out my tarot reading on Free Tarot Fun",

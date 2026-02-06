@@ -41,6 +41,8 @@ const isTransferring = ref(false); // blocks history load during post-OAuth tran
 const showShareModal = ref(false);
 const shareUrl = ref('');
 const shareTitle = ref('');
+const shareIsLoading = ref(false);
+const shareError = ref('');
 
 const route = useRoute();
 const router = useRouter();
@@ -257,6 +259,16 @@ const handleShareChat = async () => {
         return;
     }
 
+    // Show modal immediately with loading state
+    shareUrl.value = '';
+    shareError.value = '';
+    shareIsLoading.value = true;
+    showShareModal.value = true;
+
+    // Get current chat title for share text
+    const currentChat = chatStore.chatList.find(c => c.id === chatId);
+    shareTitle.value = currentChat?.title || t('share.defaultTitle');
+
     const API_URL = import.meta.env.VITE_API_URL;
 
     try {
@@ -267,40 +279,37 @@ const handleShareChat = async () => {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || t('share.error'));
+            const errorData = await response.json();
+            throw new Error(errorData.error || t('share.error'));
         }
 
         const { shareUrl: url } = await response.json();
         shareUrl.value = url;
+        shareIsLoading.value = false;
 
-        // Get current chat title for share text
-        const currentChat = chatStore.chatList.find(c => c.id === chatId);
-        shareTitle.value = currentChat?.title || t('share.defaultTitle');
-
-        // Try Web Share API first (mobile native share)
+        // Try Web Share API (on mobile, close modal and use native share)
         if (navigator.share) {
             try {
+                showShareModal.value = false; // Close modal for native share
                 await navigator.share({
                     title: shareTitle.value,
                     text: t('share.shareText'),
                     url
                 });
-                return; // Native share successful, don't show modal
+                return; // Native share successful
             } catch (e) {
-                // User cancelled or share failed — fall through to modal
+                // User cancelled or share failed — show modal instead
                 if (e.name !== 'AbortError') {
-                    console.log('Web Share failed, falling back to modal');
+                    console.log('Web Share failed, showing modal');
                 }
+                showShareModal.value = true; // Re-show modal
             }
         }
 
-        // Fallback: show share modal
-        showShareModal.value = true;
-
     } catch (error) {
         console.error('Share error:', error);
-        alert(t('share.error'));
+        shareIsLoading.value = false;
+        shareError.value = error.message || t('share.error');
     }
 };
 
@@ -979,6 +988,8 @@ watch(readings, () => {
             v-if="showShareModal"
             :share-url="shareUrl"
             :title="shareTitle"
+            :is-loading="shareIsLoading"
+            :error="shareError"
             @close="showShareModal = false"
         />
     </div>
