@@ -15,6 +15,9 @@ export const useAuthStore = defineStore('auth', () => {
   const readingPermissions = ref(null)
   const anonymousSessionId = ref(null)
 
+  // Referral system
+  const pendingReferralCode = ref(localStorage.getItem('pendingReferralCode') || null)
+
   const isLoggedIn = computed(() => !!user.value)
   const isFullyRegistered = computed(() => isLoggedIn.value && !needsRegistration.value)
 
@@ -64,6 +67,9 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('🔄 Auth already initialized, skipping...')
       return
     }
+
+    // Capture referral code from URL before anything else
+    captureReferralCode()
 
     loading.value = true
     try {
@@ -195,6 +201,9 @@ export const useAuthStore = defineStore('auth', () => {
 
         // Temporarily disabled warmup to avoid ElevenLabs rate limiting
         // performWarmup()
+
+        // Register referral if there's a pending code
+        registerReferral(session.user.id)
 
         // Run profile check, subscription and permissions loading in background WITHOUT blocking
         Promise.all([
@@ -410,6 +419,53 @@ export const useAuthStore = defineStore('auth', () => {
     }
     anonymousSessionId.value = sessionId
     return sessionId
+  }
+
+  // Capture referral code from URL (?ref=CODE)
+  const captureReferralCode = () => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const refCode = urlParams.get('ref')
+    if (refCode) {
+      console.log('🎁 Captured referral code from URL:', refCode)
+      pendingReferralCode.value = refCode
+      localStorage.setItem('pendingReferralCode', refCode)
+      // Clean URL without reload
+      const url = new URL(window.location.href)
+      url.searchParams.delete('ref')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }
+
+  // Register referral with backend
+  const registerReferral = async (userId) => {
+    if (!pendingReferralCode.value || !userId) return
+
+    const API_URL = import.meta.env.VITE_API_URL
+    try {
+      console.log('🎁 Registering referral for user:', userId, 'with code:', pendingReferralCode.value)
+      const response = await fetch(`${API_URL}/api/referral/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          referralCode: pendingReferralCode.value
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        console.log('✅ Referral registered successfully')
+      } else {
+        console.log('⚠️ Referral registration returned false (may be invalid code or self-referral)')
+      }
+
+      // Clear pending code regardless of result
+      pendingReferralCode.value = null
+      localStorage.removeItem('pendingReferralCode')
+    } catch (error) {
+      console.error('❌ Failed to register referral:', error)
+      // Keep the code for retry on next login
+    }
   }
 
   // Load user reading permissions
@@ -636,6 +692,10 @@ export const useAuthStore = defineStore('auth', () => {
     getAnonymousSessionId,
     // Warmup functions
     performWarmup,
-    showWarmupMessage
+    showWarmupMessage,
+    // Referral functions
+    captureReferralCode,
+    registerReferral,
+    pendingReferralCode
   }
 })

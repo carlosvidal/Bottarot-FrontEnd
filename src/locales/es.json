@@ -259,5 +259,21 @@
     "viaWhatsApp": "Compartir por WhatsApp",
     "viaTelegram": "Compartir por Telegram",
     "note": "Esta lectura se compartirá de forma anónima"
+  },
+  "referral": {
+    "title": "Programa de Referidos",
+    "description": "Invita amigos y gana recompensas. Usuarios gratis: 5 lecturas extra. Premium: días extra según tu plan.",
+    "yourLink": "Tu enlace de referido",
+    "totalReferrals": "Invitaciones enviadas",
+    "completedReferrals": "Referidos completados",
+    "rewardsEarned": "Recompensas ganadas",
+    "bonusReadings": "lecturas gratis",
+    "bonusDays": "días extra",
+    "howItWorks": "Cómo funciona",
+    "rule1": "Comparte tu enlace único con amigos",
+    "rule2": "Cuando se registren y completen su primera lectura, recibirás tu recompensa",
+    "rule3": "Free: +5 lecturas. Premium: +1/8/30 días según tu plan",
+    "shareTitle": "Te invito a Free Tarot Fun",
+    "shareText": "Descubre tu destino con una lectura de tarot gratis"
   }
 }

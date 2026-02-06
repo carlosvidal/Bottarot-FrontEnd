@@ -259,5 +259,21 @@
     "viaWhatsApp": "Partager via WhatsApp",
     "viaTelegram": "Partager via Telegram",
     "note": "Cette lecture sera partagée de manière anonyme"
+  },
+  "referral": {
+    "title": "Programme de Parrainage",
+    "description": "Invitez des amis et gagnez des récompenses. Utilisateurs gratuits : 5 lectures supplémentaires. Premium : jours supplémentaires selon votre plan.",
+    "yourLink": "Votre lien de parrainage",
+    "totalReferrals": "Invitations envoyées",
+    "completedReferrals": "Parrainages complétés",
+    "rewardsEarned": "Récompenses gagnées",
+    "bonusReadings": "lectures gratuites",
+    "bonusDays": "jours supplémentaires",
+    "howItWorks": "Comment ça marche",
+    "rule1": "Partagez votre lien unique avec vos amis",
+    "rule2": "Quand ils s'inscrivent et complètent leur première lecture, vous recevrez votre récompense",
+    "rule3": "Gratuit : +5 lectures. Premium : +1/8/30 jours selon votre plan",
+    "shareTitle": "Je vous invite sur Free Tarot Fun",
+    "shareText": "Découvrez votre destin avec une lecture de tarot gratuite"
   }
 }

@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase.js'
 import { useI18n } from 'vue-i18n'
 import { useAnalytics } from '../composables/useAnalytics.js'
 import { LogOut } from 'lucide-vue-next'
+import ReferralDashboard from '../components/ReferralDashboard.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -336,6 +337,9 @@ onMounted(() => {
                     </div>
                 </form>
             </div>
+
+            <!-- Referral Dashboard -->
+            <ReferralDashboard v-if="!loading && !editing" />
 
             <div class="actions">
                 <router-link to="/chat" class="back-button">{{ t('profile.backToChat') }}</router-link>
