@@ -76,10 +76,12 @@
     "future": "Futuro",
     "inverted": "Invertita",
     "hidden": "Nascosto",
-    "futureHidden": "Il futuro rimane velato finché non reclami il tuo destino...",
+    "futureHidden": "Il futuro rimane velato finché non ti registri...",
     "futureAwaits": "Il tuo futuro attende di essere rivelato",
     "unlockFuture": "Sblocca il futuro",
-    "claimIdentity": "Reclama la mia identità"
+    "claimIdentity": "Registrati gratis",
+    "registerToReveal": "Registrati per rivelare il tuo futuro",
+    "upgradeToPremium": "Sblocca il tuo futuro completo con un piano premium"
   },
   "reading": {
     "oracleThinking": "L'oracolo sta meditando sul tuo destino...",
@@ -183,9 +185,11 @@
     "tryFreeReading": "🔮 Prova una Lettura Gratuita",
     "tryNote": "Senza registrazione · Il tuo futuro rimarrà velato",
     "or": "o",
-    "claimIdentity": "✨ Reclama la tua identità spirituale ✨",
-    "trialBenefit": "Durante i tuoi primi 5 giorni, i tarocchi riveleranno il tuo futuro completo",
-    "connecting": "Connessione...",
+    "claimIdentity": "Registrati e il tuo futuro sarà rivelato",
+    "trialBenefit": "5 giorni gratis con il futuro completo rivelato",
+    "connecting": "Accesso in corso...",
+    "signInWithGoogle": "Accedi con Google",
+    "signInWithFacebook": "Accedi con Facebook",
     "spiritualPath": "Il Tuo Cammino Spirituale",
     "offers": {
       "seeker": "Cercatore",

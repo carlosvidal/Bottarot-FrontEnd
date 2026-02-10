@@ -144,10 +144,10 @@ const handleSignup = async (event) => {
                     <p class="register-benefit">{{ t('landing.trialBenefit') }}</p>
                     <div class="social-buttons">
                         <button @click="handleGoogleLogin" class="social-btn google" :disabled="auth.loading">
-                            {{ auth.loading ? t('landing.connecting') : 'Google' }}
+                            {{ auth.loading ? t('landing.connecting') : t('landing.signInWithGoogle') }}
                         </button>
                         <button @click="handleFacebookLogin" class="social-btn facebook" :disabled="auth.loading">
-                            {{ auth.loading ? t('landing.connecting') : 'Facebook' }}
+                            {{ auth.loading ? t('landing.connecting') : t('landing.signInWithFacebook') }}
                         </button>
                     </div>
                 </div>

@@ -76,10 +76,12 @@
     "future": "Future",
     "inverted": "Reversed",
     "hidden": "Hidden",
-    "futureHidden": "The future remains veiled until you claim your destiny...",
+    "futureHidden": "The future remains veiled until you sign up...",
     "futureAwaits": "Your future awaits to be revealed",
     "unlockFuture": "Unlock future",
-    "claimIdentity": "Claim my identity"
+    "claimIdentity": "Sign up free",
+    "registerToReveal": "Sign up to reveal your future",
+    "upgradeToPremium": "Unlock your complete future with a premium plan"
   },
   "reading": {
     "oracleThinking": "The oracle is contemplating your destiny...",
@@ -183,9 +185,11 @@
     "tryFreeReading": "🔮 Try a Free Reading",
     "tryNote": "No sign-up required · Your future will remain veiled",
     "or": "or",
-    "claimIdentity": "✨ Claim your spiritual identity ✨",
-    "trialBenefit": "During your first 5 days, the tarot will reveal your complete future",
-    "connecting": "Connecting...",
+    "claimIdentity": "Sign up and your future will be revealed",
+    "trialBenefit": "5 free days with your complete future revealed",
+    "connecting": "Signing in...",
+    "signInWithGoogle": "Sign in with Google",
+    "signInWithFacebook": "Sign in with Facebook",
     "spiritualPath": "Your Spiritual Path",
     "offers": {
       "seeker": "Seeker",

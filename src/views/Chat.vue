@@ -190,7 +190,7 @@ const loadChatHistory = async (chatId, options = {}) => {
                     role: 'assistant',
                     timestamp: msg.created_at,
                     futureHidden: msgFutureHidden,
-                    ctaMessage: msgFutureHidden ? (auth.isAnonymousUser ? 'Para revelar tu futuro, reclama tu identidad espiritual' : 'Desbloquea tu futuro completo con un plan premium') : null,
+                    ctaMessage: msgFutureHidden ? (auth.isAnonymousUser ? t('cards.registerToReveal') : t('cards.upgradeToPremium')) : null,
                     isAnonymous: auth.isAnonymousUser,
                     animateEntrance: animateEntrance
                 });
