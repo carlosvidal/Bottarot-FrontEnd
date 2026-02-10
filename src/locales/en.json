@@ -1,4 +1,18 @@
 {
+  "seo": {
+    "landing": {
+      "title": "Free Tarot Fun - AI Tarot Readings Online",
+      "description": "Get free AI-powered tarot readings. Discover guidance about your past, present and future through the wisdom of Tarot. No registration required."
+    },
+    "chat": {
+      "title": "Tarot Reading - Free Tarot Fun",
+      "description": "Ask your question and receive a personalized AI tarot reading with three-card spread."
+    },
+    "checkout": {
+      "title": "Premium Plans - Free Tarot Fun",
+      "description": "Unlock unlimited tarot readings and exclusive features with our premium plans."
+    }
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",

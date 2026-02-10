@@ -1,4 +1,18 @@
 {
+  "seo": {
+    "landing": {
+      "title": "Free Tarot Fun - Lecturas de Tarot con IA Gratis",
+      "description": "Consulta el tarot gratis con inteligencia artificial. Obtén lecturas personalizadas sobre tu pasado, presente y futuro. Sin registro necesario."
+    },
+    "chat": {
+      "title": "Lectura de Tarot - Free Tarot Fun",
+      "description": "Haz tu pregunta y recibe una lectura de tarot personalizada con IA y tirada de tres cartas."
+    },
+    "checkout": {
+      "title": "Planes Premium - Free Tarot Fun",
+      "description": "Desbloquea lecturas de tarot ilimitadas y funciones exclusivas con nuestros planes premium."
+    }
+  },
   "common": {
     "loading": "Cargando...",
     "save": "Guardar",

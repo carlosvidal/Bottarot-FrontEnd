@@ -3,7 +3,9 @@ import { ref, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
+import { useSeoMeta } from '../composables/useSeoMeta';
 const auth = useAuthStore();
+useSeoMeta('landing');
 const router = useRouter();
 const route = useRoute();
 const { t, locale } = useI18n();
@@ -115,11 +117,12 @@ const handleSignup = async (event) => {
 </script>
 
 <template>
-    <div class="landing-container">
+    <main class="landing-container">
 
         <div class="main-content">
             <!-- Default Logged-out View -->
-            <div v-if="!showSignupForm && !auth.needsRegistration">
+            <section v-if="!showSignupForm && !auth.needsRegistration">
+                <h1 class="landing-title">{{ t('landing.title') }}</h1>
                 <p class="subtitle">{{ t('landing.subtitle') }}</p>
 
                 <!-- Try anonymously first -->
@@ -199,7 +202,7 @@ const handleSignup = async (event) => {
                         <img src="https://launchigniter.com/api/badge/free-tarot-fun?theme=light" alt="Featured on LaunchIgniter" width="212" height="55" />
                     </a>
                 </div>
-            </div>
+            </section>
 
             <!-- Sign-up Form View -->
             <div v-if="showSignupForm || auth.needsRegistration" class="signup-form-container">
@@ -241,12 +244,13 @@ const handleSignup = async (event) => {
             </div>
         </div>
 
-    </div>
+    </main>
 </template>
 
 <style scoped>
 .landing-container { display: flex; flex-direction: column; flex-grow: 1; font-family: var(--font-content); color: var(--text-primary); text-align: center; padding: 20px; }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; max-width: 800px; margin: 0 auto; }
+.landing-title { font-size: 2.5rem; color: var(--color-accent-text); margin-bottom: 15px; font-weight: 700; }
 .subtitle { font-size: 1.3rem; color: var(--text-secondary); font-style: italic; margin-bottom: 40px; line-height: 1.6; }
 
 

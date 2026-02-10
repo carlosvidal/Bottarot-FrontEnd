@@ -1,4 +1,18 @@
 {
+  "seo": {
+    "landing": {
+      "title": "Free Tarot Fun - Lettura dei Tarocchi con IA Gratis",
+      "description": "Consulta i tarocchi gratis con intelligenza artificiale. Ottieni letture personalizzate sul tuo passato, presente e futuro. Nessuna registrazione richiesta."
+    },
+    "chat": {
+      "title": "Lettura dei Tarocchi - Free Tarot Fun",
+      "description": "Fai la tua domanda e ricevi una lettura dei tarocchi personalizzata con IA e stesa a tre carte."
+    },
+    "checkout": {
+      "title": "Piani Premium - Free Tarot Fun",
+      "description": "Sblocca letture dei tarocchi illimitate e funzionalità esclusive con i nostri piani premium."
+    }
+  },
   "common": {
     "loading": "Caricamento...",
     "save": "Salva",

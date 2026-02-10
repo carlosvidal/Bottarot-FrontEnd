@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /chat/
+Disallow: /profile
+Disallow: /checkout
+Disallow: /checkout-success
+Disallow: /debug
+Disallow: /admin
+
+Sitemap: https://freetarot.fun/sitemap.xml
