@@ -189,6 +189,16 @@ const handleSignup = async (event) => {
                         </router-link>
                     </div>
                 </div>
+
+                <!-- Launch Badges -->
+                <div class="badges-section">
+                    <a href="https://www.producthunt.com/products/free-tarot-fun?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-free-tarot-fun" target="_blank" rel="noopener noreferrer">
+                        <img alt="Free Tarot Fun - AI-assisted tarot readings for reflection, not predictions | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1075344&theme=light&t=1770660410773">
+                    </a>
+                    <a href="https://launchigniter.com/product/free-tarot-fun?ref=badge-free-tarot-fun" target="_blank" rel="noopener noreferrer">
+                        <img src="https://launchigniter.com/api/badge/free-tarot-fun?theme=light" alt="Featured on LaunchIgniter" width="212" height="55" />
+                    </a>
+                </div>
             </div>
 
             <!-- Sign-up Form View -->
@@ -387,6 +397,24 @@ const handleSignup = async (event) => {
 }
 .offer-card-link { text-decoration: none; color: inherit; }
 
+
+/* Launch Badges */
+.badges-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 40px 0;
+}
+.badges-section a {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0.85;
+}
+.badges-section a:hover {
+    transform: translateY(-2px);
+    opacity: 1;
+}
 
 /* Sign-up Form */
 .signup-form-container { max-width: 500px; margin: 0 auto; }
