@@ -122,15 +122,20 @@ const handleSignup = async (event) => {
         <div class="main-content">
             <!-- Default Logged-out View -->
             <section v-if="!showSignupForm && !auth.needsRegistration">
-                <h1 class="landing-title">{{ t('landing.title') }}</h1>
-                <p class="subtitle">{{ t('landing.subtitle') }}</p>
-
-                <!-- Try anonymously first -->
-                <div class="try-section">
+                <!-- Hero -->
+                <div class="hero">
+                    <h1 class="hero-headline">{{ t('landing.title') }}<br><span class="hero-headline-sub">{{ t('landing.titleLine2') }}</span></h1>
+                    <p class="hero-subtitle">{{ t('landing.subtitle') }}</p>
                     <router-link to="/chat" class="try-button">
                         {{ t('landing.tryFreeReading') }}
                     </router-link>
-                    <p class="try-note">{{ t('landing.tryNote') }}</p>
+                    <p class="hero-microcopy">{{ t('landing.tryNote') }}</p>
+                </div>
+
+                <!-- Social proof -->
+                <div class="social-proof">
+                    <p class="social-proof-text">{{ t('landing.socialProof') }}</p>
+                    <p class="social-proof-langs">{{ t('landing.availableIn') }} ES · EN · PT · FR · IT</p>
                 </div>
 
                 <div class="divider-section">
@@ -259,44 +264,74 @@ const handleSignup = async (event) => {
 <style scoped>
 .landing-container { display: flex; flex-direction: column; flex-grow: 1; font-family: var(--font-content); color: var(--text-primary); text-align: center; padding: 20px; }
 .main-content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; max-width: 800px; margin: 0 auto; }
-.landing-title { font-size: 2.5rem; color: var(--color-accent-text); margin-bottom: 15px; font-weight: 700; }
-.subtitle { font-size: 1.3rem; color: var(--text-secondary); font-style: italic; margin-bottom: 40px; line-height: 1.6; }
-
 
 /* CTA */
 .main-cta-button { background: linear-gradient(45deg, var(--btn-primary), var(--btn-primary-hover)); color: var(--color-white); text-decoration: none; padding: 18px 40px; font-size: 1.4rem; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); display: inline-block; border: none; }
 .main-cta-button:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); }
 .main-cta-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Try Section */
-.try-section {
+/* Hero */
+.hero {
     margin-bottom: 30px;
     text-align: center;
 }
-
+.hero-headline {
+    font-size: 2.6rem;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.hero-headline-sub {
+    color: var(--color-accent-text);
+}
+.hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 35px;
+    line-height: 1.7;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
 .try-button {
     display: inline-block;
     background: linear-gradient(45deg, var(--btn-secondary), var(--btn-secondary-hover));
     color: var(--color-white);
     text-decoration: none;
-    padding: 18px 40px;
+    padding: 18px 44px;
     font-size: 1.3rem;
     border-radius: 30px;
     transition: all 0.3s ease;
     box-shadow: 0 5px 25px var(--shadow-btn-secondary);
     font-weight: bold;
 }
-
 .try-button:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 30px var(--shadow-btn-secondary-hover);
 }
-
-.try-note {
-    margin-top: 12px;
+.hero-microcopy {
+    margin-top: 14px;
     font-size: 0.9rem;
     color: var(--text-tertiary);
+    letter-spacing: 0.5px;
+}
+
+/* Social proof */
+.social-proof {
+    margin-bottom: 30px;
+    padding: 15px 0;
+}
+.social-proof-text {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
     font-style: italic;
+    margin-bottom: 6px;
+}
+.social-proof-langs {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    letter-spacing: 1px;
 }
 
 /* Divider */

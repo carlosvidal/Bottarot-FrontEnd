@@ -180,10 +180,13 @@
     }
   },
   "landing": {
-    "title": "🔮 Free Tarot Fun 🔮",
-    "subtitle": "Découvrez ce que le destin vous réserve. Recevez des conseils sur votre passé, présent et futur grâce à la sagesse du Tarot.",
-    "tryFreeReading": "🔮 Essayer une Lecture Gratuite",
-    "tryNote": "Sans inscription · Votre avenir restera voilé",
+    "title": "Posez une vraie question.",
+    "titleLine2": "Le tarot vous aide à la comprendre.",
+    "subtitle": "Lectures symboliques avec IA pour réfléchir aux décisions, relations et moments clés. Pas de promesses magiques. Pas de fumée.",
+    "tryFreeReading": "🔮 Faites une lecture gratuite",
+    "tryNote": "Sans inscription · 1 minute · Réponse claire",
+    "socialProof": "Utilisé par les curieux, les sceptiques et ceux qui réfléchissent trop",
+    "availableIn": "Disponible en",
     "or": "ou",
     "claimIdentity": "Inscrivez-vous et votre avenir sera révélé",
     "trialBenefit": "5 jours gratuits avec votre avenir complet révélé",

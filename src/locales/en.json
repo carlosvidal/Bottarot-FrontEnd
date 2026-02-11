@@ -180,10 +180,13 @@
     }
   },
   "landing": {
-    "title": "🔮 Free Tarot Fun 🔮",
-    "subtitle": "Discover what destiny has in store for you. Receive guidance about your past, present and future through the wisdom of Tarot.",
-    "tryFreeReading": "🔮 Try a Free Reading",
-    "tryNote": "No sign-up required · Your future will remain veiled",
+    "title": "Ask a real question.",
+    "titleLine2": "Tarot helps you understand it.",
+    "subtitle": "Symbolic AI-powered readings to reflect on decisions, relationships and key moments. No magic promises. No smoke and mirrors.",
+    "tryFreeReading": "🔮 Get a free reading",
+    "tryNote": "No sign-up · 1 minute · Clear answer",
+    "socialProof": "Used by the curious, the skeptics, and overthinkers",
+    "availableIn": "Available in",
     "or": "or",
     "claimIdentity": "Sign up and your future will be revealed",
     "trialBenefit": "5 free days with your complete future revealed",
