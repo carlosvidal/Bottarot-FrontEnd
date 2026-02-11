@@ -126,16 +126,15 @@ const handleSignup = async (event) => {
                 <div class="hero">
                     <h1 class="hero-headline">{{ t('landing.title') }}<br><span class="hero-headline-sub">{{ t('landing.titleLine2') }}</span></h1>
                     <p class="hero-subtitle">{{ t('landing.subtitle') }}</p>
+                    <!-- Social proof -->
+                    <div class="social-proof">
+                        <p class="social-proof-text">{{ t('landing.socialProof') }}</p>
+                        <p class="social-proof-langs">{{ t('landing.availableIn') }} ES · EN · PT · FR · IT</p>
+                    </div>
                     <router-link to="/chat" class="try-button">
                         {{ t('landing.tryFreeReading') }}
                     </router-link>
                     <p class="hero-microcopy">{{ t('landing.tryNote') }}</p>
-                </div>
-
-                <!-- Social proof -->
-                <div class="social-proof">
-                    <p class="social-proof-text">{{ t('landing.socialProof') }}</p>
-                    <p class="social-proof-langs">{{ t('landing.availableIn') }} ES · EN · PT · FR · IT</p>
                 </div>
 
                 <div class="divider-section">
